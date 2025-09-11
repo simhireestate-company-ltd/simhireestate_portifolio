@@ -1,0 +1,15 @@
+{
+  "name": "SimHireEstate Portfolio",
+  "short_name": "SimHireEstate",
+  "description": "SimHireEstate — a unified ecosystem for jobs, property, microtasks, freelance, e-learning, marketplace, and finance.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "theme_color": "#063F5E",
+  "background_color": "#ffffff",
+  "icons": [
+    { "src": "./assets/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/logo2.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./assets/logo.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
