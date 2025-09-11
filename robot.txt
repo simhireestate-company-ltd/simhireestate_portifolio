@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://simhireestate-company-ltd.github.io/simhireestate_portifolio/sitemap.xml
