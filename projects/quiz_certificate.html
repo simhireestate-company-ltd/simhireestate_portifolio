@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz Master Certification Studio — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#063F5E',
+              secondary: '#1a1a69',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --brand-primary: #063F5E;
+      --brand-secondary: #1a1a69;
+      --brand-accent: #38bdf8;
+    }
+    body {
+      background: radial-gradient(circle at top left, rgba(6, 63, 94, 0.12), transparent 65%),
+        linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(248, 250, 252, 0.9));
+    }
+    .card-glass {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      backdrop-filter: blur(12px);
+    }
+    .question-card.correct {
+      border-color: rgba(34, 197, 94, 0.3);
+      background: rgba(34, 197, 94, 0.1);
+    }
+    .question-card.incorrect {
+      border-color: rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.12);
+    }
+    .mode-tab[aria-selected="true"] {
+      background: rgba(6, 63, 94, 0.12);
+      color: var(--brand-primary);
+    }
+    .badge-tab[aria-selected="true"] {
+      background: rgba(99, 102, 241, 0.12);
+      color: var(--brand-secondary);
+    }
+    .difficulty-pill[aria-pressed="true"] {
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--brand-primary);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    @media (max-width: 992px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash.shuffle@4.2.0/index.min.js"></script>
+</head>
+<body class="min-h-screen text-slate-800">
+  <header class="border-b border-white/40 bg-white/80 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6">
+      <div class="flex items-center gap-3">
+        <img src="../assets/logo.png" alt="SimHireEstate" class="h-10 w-10 rounded-full border border-slate-200" />
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-500">SimHireEstate Academy</p>
+          <h1 class="text-2xl font-bold" style="color: var(--brand-primary)">Quiz Master Certification Studio</h1>
+        </div>
+      </div>
+      <nav class="flex flex-wrap gap-2 text-xs">
+        <button class="mode-tab px-4 py-2 rounded-full border border-slate-200" data-mode="practice" aria-selected="true">Practice Lab</button>
+        <button class="mode-tab px-4 py-2 rounded-full border border-slate-200" data-mode="exam">Certification Exam</button>
+        <button class="mode-tab px-4 py-2 rounded-full border border-slate-200" data-mode="custom">Custom Builder</button>
+        <a href="../projects.html" class="px-4 py-2 text-white rounded-full" style="background: var(--brand-secondary)">Back to projects</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8 space-y-6">
+    <section class="grid layout gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <aside class="card-glass border border-slate-200 rounded-2xl shadow-xl p-5 space-y-5">
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-full bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)] flex items-center justify-center font-semibold">QL</div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Candidate profile</p>
+              <p id="profileSummary" class="text-sm text-slate-600">Create your learning card</p>
+            </div>
+          </div>
+          <label class="text-sm">Learner Name
+            <input id="learner" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="Name for certificate" />
+          </label>
+          <label class="text-sm">Preferred Mentor Signature
+            <input id="mentor" class="mt-1 w-full border rounded-xl px-3 py-2" placeholder="e.g., J. Niyonsenga" />
+          </label>
+        </div>
+
+        <div class="space-y-3">
+          <label class="text-sm">Quiz Topic
+            <select id="topic" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm"></select>
+          </label>
+          <div>
+            <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Difficulty presets</p>
+            <div class="mt-2 flex flex-wrap gap-2 text-xs">
+              <button class="difficulty-pill px-3 py-1.5 border rounded-full" data-difficulty="foundations" aria-pressed="true">Foundations</button>
+              <button class="difficulty-pill px-3 py-1.5 border rounded-full" data-difficulty="intermediate">Intermediate</button>
+              <button class="difficulty-pill px-3 py-1.5 border rounded-full" data-difficulty="advanced">Advanced</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-xs">
+          <button id="start" class="px-3 py-2 rounded-lg text-white" style="background: var(--brand-secondary)">Start</button>
+          <button id="restart" class="px-3 py-2 border rounded-lg" style="border-color:#E5E7EB">Restart</button>
+          <button id="exportCert" class="px-3 py-2 border rounded-lg" style="border-color:#E5E7EB">Certificate</button>
+          <button id="shuffle" class="px-3 py-2 border rounded-lg" style="border-color:#E5E7EB">Shuffle</button>
+          <button id="timerToggle" class="px-3 py-2 border rounded-lg" style="border-color:#E5E7EB">Timer</button>
+          <button id="saveProgress" class="px-3 py-2 border rounded-lg" style="border-color:#E5E7EB">Save</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div class="p-3 border border-slate-200 rounded-xl bg-slate-50">
+            <div class="text-xs uppercase text-slate-500">Exam timer</div>
+            <div class="text-lg font-semibold" id="timeLeft">—</div>
+          </div>
+          <div class="p-3 border border-slate-200 rounded-xl bg-slate-50">
+            <div class="text-xs uppercase text-slate-500">Score</div>
+            <div class="text-lg font-semibold"><span id="score">0</span> / <span id="total">0</span></div>
+          </div>
+        </div>
+
+        <div class="p-4 border border-slate-200 rounded-2xl bg-slate-50 text-sm space-y-1">
+          <p>Rank class: <span id="rank">—</span></p>
+          <p>Correct answers: <span id="correctCount">0</span></p>
+          <p>Incorrect answers: <span id="wrongCount">0</span></p>
+          <p>Accuracy: <span id="accuracy">0%</span></p>
+          <p>Fastest response: <span id="fastest">—</span></p>
+          <p>Slowest response: <span id="slowest">—</span></p>
+        </div>
+
+        <div class="rounded-2xl border border-dashed border-slate-200 bg-white/70 p-4 text-xs text-slate-500 space-y-2">
+          <p class="font-semibold text-slate-600">Mode insights</p>
+          <p id="modeSummary">Practice Lab offers immediate feedback, unlimited retries, and per-question hints.</p>
+          <p class="text-slate-400">Exam mode locks answers and records proctored analytics for certification.</p>
+        </div>
+      </aside>
+
+      <section class="space-y-6">
+        <div class="card-glass p-5 border border-slate-200 rounded-2xl shadow-xl">
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <button class="badge-tab px-3 py-1.5 rounded-full text-xs" data-view="quiz" aria-selected="true">Quiz Canvas</button>
+            <button class="badge-tab px-3 py-1.5 rounded-full text-xs" data-view="review">Answer Review</button>
+            <button class="badge-tab px-3 py-1.5 rounded-full text-xs" data-view="analytics">Analytics</button>
+            <button class="badge-tab px-3 py-1.5 rounded-full text-xs" data-view="notes">Mentor Notes</button>
+          </div>
+          <div id="viewQuiz" class="space-y-4"></div>
+          <div id="viewReview" class="space-y-3 hidden"></div>
+          <div id="viewAnalytics" class="hidden">
+            <canvas id="analyticsChart" class="w-full h-56 bg-white border rounded-xl"></canvas>
+            <div class="grid sm:grid-cols-2 gap-3 text-sm mt-4">
+              <div class="p-3 border border-slate-200 rounded-xl bg-slate-50 space-y-1">
+                <strong>Average response</strong>
+                <p id="avgTime">—</p>
+                <p class="text-xs text-slate-500">Measured only when timer is active.</p>
+              </div>
+              <div class="p-3 border border-slate-200 rounded-xl bg-slate-50 space-y-1">
+                <strong>Best streak</strong>
+                <p id="bestStreak">0</p>
+                <p class="text-xs text-slate-500">Consecutive correct answers.</p>
+              </div>
+            </div>
+          </div>
+          <div id="viewNotes" class="hidden">
+            <textarea id="mentorNotes" rows="6" class="w-full border rounded-xl px-3 py-3 text-sm" placeholder="Capture teaching notes, tricky concepts, or learner feedback..."></textarea>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+              <button id="saveNotes" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Save notes</button>
+              <button id="clearNotes" class="px-3 py-2 border rounded text-red-500" style="border-color:#FECACA">Clear notes</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-glass p-5 border border-slate-200 rounded-2xl shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold" style="color: var(--brand-primary)">Question Bank Architect</h2>
+              <p class="text-sm text-slate-500">Craft your own topic modules or import curated packs in JSON format.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <button id="importBank" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Import questions</button>
+              <button id="exportBank" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Export selection</button>
+            </div>
+          </div>
+          <form id="bankForm" class="mt-4 grid gap-4">
+            <div class="grid md:grid-cols-2 gap-4">
+              <label class="text-sm">Question prompt
+                <textarea id="bankQuestion" class="mt-1 border rounded-xl px-3 py-2" rows="3" placeholder="Describe the question clearly" required></textarea>
+              </label>
+              <label class="text-sm">Topic key
+                <input id="bankTopic" class="mt-1 border rounded-xl px-3 py-2" placeholder="e.g., accessibility" required />
+              </label>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <label class="text-sm">Options (comma separated)
+                <input id="bankOptions" class="mt-1 border rounded-xl px-3 py-2" placeholder="Option A, Option B, ..." required />
+              </label>
+              <label class="text-sm">Correct index (0-based)
+                <input id="bankCorrect" type="number" min="0" class="mt-1 border rounded-xl px-3 py-2" required />
+              </label>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <label class="text-sm">Explanation / hint
+                <textarea id="bankExplanation" class="mt-1 border rounded-xl px-3 py-2" rows="2" placeholder="Tell learners why the correct answer is right"></textarea>
+              </label>
+              <label class="text-sm">Difficulty label
+                <input id="bankDifficulty" class="mt-1 border rounded-xl px-3 py-2" placeholder="e.g., Foundations" />
+              </label>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button class="px-3 py-2 text-white rounded" style="background: var(--brand-secondary)">Add to bank</button>
+              <button id="clearForm" type="button" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Clear form</button>
+            </div>
+          </form>
+          <div id="bankList" class="mt-4 grid md:grid-cols-2 gap-3 text-sm"></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="card-glass p-5 border border-slate-200 rounded-2xl shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Certification readiness</p>
+          <h2 class="text-xl font-semibold" style="color: var(--brand-primary)">SimHireEstate competency checklist</h2>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <button id="downloadChecklist" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Download checklist</button>
+          <button id="resetChecklist" class="px-3 py-2 border rounded text-red-500" style="border-color:#FECACA">Reset checklist</button>
+        </div>
+      </div>
+      <div class="mt-4 grid md:grid-cols-3 gap-4 text-sm" id="competencyGrid"></div>
+    </section>
+  </main>
+
+  <input id="bankImport" type="file" accept="application/json" hidden />
+
+  <template id="questionTemplate">
+    <article class="question-card border border-slate-200 rounded-2xl p-4 transition" data-index>
+      <header class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p class="text-xs uppercase tracking-[0.18em] text-slate-400" data-subtopic></p>
+          <h3 class="font-semibold text-slate-800" data-title></h3>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-500" data-metadata></div>
+      </header>
+      <p class="mt-3 text-sm text-slate-600" data-body></p>
+      <div class="mt-3 grid sm:grid-cols-2 gap-2" data-options></div>
+      <div class="mt-3 flex flex-wrap gap-2 text-xs">
+        <button class="check px-3 py-1.5 border rounded" style="border-color:#E5E7EB" data-check>Check answer</button>
+        <button class="explain px-3 py-1.5 border rounded hidden" style="border-color:#E5E7EB" data-explain>Show explanation</button>
+      </div>
+      <div class="mt-2 hidden text-sm" data-feedback></div>
+    </article>
+  </template>
+
+  <template id="reviewCardTemplate">
+    <article class="border border-slate-200 rounded-2xl p-4 space-y-2 bg-white/80">
+      <header class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="font-semibold text-slate-700" data-review-title></h3>
+          <p class="text-xs text-slate-500" data-review-topic></p>
+        </div>
+        <span class="text-xs font-semibold" data-review-status></span>
+      </header>
+      <p class="text-sm text-slate-600" data-review-explanation></p>
+      <p class="text-xs text-slate-500" data-review-meta></p>
+    </article>
+  </template>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+    const templateContent = (template) => template.content.firstElementChild.cloneNode(true);
+
+    const learner = $('#learner');
+    const mentor = $('#mentor');
+    const profileSummary = $('#profileSummary');
+    const topic = $('#topic');
+    const difficultyPills = $$('.difficulty-pill');
+    const viewTabs = $$('.badge-tab');
+    const modeTabs = $$('.mode-tab');
+    const quizCanvas = $('#viewQuiz');
+    const reviewCanvas = $('#viewReview');
+    const analyticsCanvas = $('#viewAnalytics');
+    const notesCanvas = $('#viewNotes');
+    const notesField = $('#mentorNotes');
+    const scoreEl = $('#score');
+    const totalEl = $('#total');
+    const rankEl = $('#rank');
+    const correctEl = $('#correctCount');
+    const wrongEl = $('#wrongCount');
+    const accuracyEl = $('#accuracy');
+    const fastestEl = $('#fastest');
+    const slowestEl = $('#slowest');
+    const timeLeftEl = $('#timeLeft');
+    const bankList = $('#bankList');
+    const competencyGrid = $('#competencyGrid');
+
+    let questionBank = {};
+    let filteredQuestionBank = [];
+    let currentQuestions = [];
+    let answers = {};
+    let reviewMap = {};
+    let mode = 'practice';
+    let difficultyPreset = 'foundations';
+    let timer = null;
+    let seconds = 0;
+    let analytics = [];
+    let chart = null;
+
+    const baseQuestions = {
+      html: {
+        label: 'HTML Foundations',
+        questions: [
+          {
+            id: 'html-headings',
+            difficulty: 'foundations',
+            subtopic: 'Structure',
+            prompt: 'Which tag defines the largest heading on a web page?',
+            options: ['<h1>', '<head>', '<header>', '<h6>'],
+            answer: 0,
+            explanation: 'Heading tags range from <h1> (largest) to <h6> (smallest).',
+            metadata: 'Emphasizes semantic structure'
+          },
+          {
+            id: 'html-alt-text',
+            difficulty: 'foundations',
+            subtopic: 'Accessibility',
+            prompt: 'Why is the alt attribute important for <img> elements?',
+            options: [
+              'It provides alternative text for screen readers',
+              'It changes image size',
+              'It adds a border to the image',
+              'It links the image to another page'
+            ],
+            answer: 0,
+            explanation: 'Alternative text ensures images are accessible to assistive technologies and improves SEO.',
+            metadata: 'WCAG 2.1 Level A requirement'
+          },
+          {
+            id: 'html-forms',
+            difficulty: 'intermediate',
+            subtopic: 'Forms',
+            prompt: 'Which attribute is required for input elements to send data within forms?',
+            options: ['name', 'id', 'data-send', 'role'],
+            answer: 0,
+            explanation: 'The name attribute identifies form controls for submission payloads.',
+            metadata: 'Form submission fundamentals'
+          },
+          {
+            id: 'html-tables',
+            difficulty: 'advanced',
+            subtopic: 'Tables',
+            prompt: 'What is the purpose of <caption> within a table?',
+            options: [
+              'Provides a title or description for the table',
+              'Defines column headers',
+              'Adds footers to the table',
+              'Creates responsive layouts automatically'
+            ],
+            answer: 0,
+            explanation: '<caption> describes the table for all users, improving accessibility and context.',
+            metadata: 'Screen reader friendly'
+          },
+          {
+            id: 'html-aria',
+            difficulty: 'advanced',
+            subtopic: 'Accessibility',
+            prompt: 'Which ARIA attribute announces dynamic changes without moving focus?',
+            options: ['aria-live', 'aria-label', 'aria-hidden', 'aria-expanded'],
+            answer: 0,
+            explanation: '`aria-live` regions allow screen readers to announce updates in real time without disrupting focus.',
+            metadata: 'Live region pattern'
+          }
+        ]
+      },
+      css: {
+        label: 'CSS Styling',
+        questions: [
+          {
+            id: 'css-color',
+            difficulty: 'foundations',
+            subtopic: 'Selectors',
+            prompt: 'Which declaration changes the text color of all paragraphs?',
+            options: ['p { color: #1a1a69; }', 'text: #1a1a69;', 'p:color(#1a1a69);', 'p::color = #1a1a69;'],
+            answer: 0,
+            explanation: 'The color property sets the foreground text color for the selected elements.',
+            metadata: 'CSS property basics'
+          },
+          {
+            id: 'css-specificity',
+            difficulty: 'intermediate',
+            subtopic: 'Specificity',
+            prompt: 'Which selector has the highest specificity?',
+            options: ['.card .title', '#hero h1', 'nav li a', 'button:hover'],
+            answer: 1,
+            explanation: 'ID selectors override class and element selectors in the specificity hierarchy.',
+            metadata: 'Cascading rules'
+          },
+          {
+            id: 'css-grid',
+            difficulty: 'intermediate',
+            subtopic: 'Layout',
+            prompt: 'Which property defines columns in CSS Grid?',
+            options: ['grid-template-columns', 'grid-columns', 'grid-track', 'grid-lines'],
+            answer: 0,
+            explanation: '`grid-template-columns` sets the pattern and size of columns in a grid container.',
+            metadata: 'Modern layout techniques'
+          },
+          {
+            id: 'css-variable',
+            difficulty: 'advanced',
+            subtopic: 'Custom properties',
+            prompt: 'How do you reference a CSS custom property within another rule?',
+            options: ['var(--property)', 'css(--property)', '$property', '@property'],
+            answer: 0,
+            explanation: '`var(--property-name)` resolves the custom property and applies the stored value.',
+            metadata: 'Design systems ready'
+          }
+        ]
+      },
+      js: {
+        label: 'JavaScript Fundamentals',
+        questions: [
+          {
+            id: 'js-scope',
+            difficulty: 'foundations',
+            subtopic: 'Variables',
+            prompt: 'Which declaration creates a block-scoped variable?',
+            options: ['let', 'var', 'function', 'class'],
+            answer: 0,
+            explanation: '`let` and `const` respect block scope, whereas `var` does not.',
+            metadata: 'ES6 basics'
+          },
+          {
+            id: 'js-equality',
+            difficulty: 'foundations',
+            subtopic: 'Equality',
+            prompt: 'What does the === operator compare?',
+            options: ['Value and type', 'Only value', 'Only type', 'Reference address'],
+            answer: 0,
+            explanation: 'Triple equals ensures both operands have the same value and type with no coercion.',
+            metadata: 'Strict comparison'
+          },
+          {
+            id: 'js-promises',
+            difficulty: 'intermediate',
+            subtopic: 'Async',
+            prompt: 'Which method handles promise rejection?',
+            options: ['catch()', 'finally()', 'resolve()', 'await'],
+            answer: 0,
+            explanation: '`catch()` registers a callback to handle errors that occur in the promise chain.',
+            metadata: 'Asynchronous patterns'
+          },
+          {
+            id: 'js-array-methods',
+            difficulty: 'intermediate',
+            subtopic: 'Arrays',
+            prompt: 'What does Array.prototype.map() return?',
+            options: ['A new array with transformed items', 'The original array sorted', 'A boolean value', 'A promise'],
+            answer: 0,
+            explanation: '`map()` generates a new array, applying the callback to each original item without mutating the source.',
+            metadata: 'Functional techniques'
+          },
+          {
+            id: 'js-performance',
+            difficulty: 'advanced',
+            subtopic: 'Performance',
+            prompt: 'Which practice improves rendering performance in modern web apps?',
+            options: [
+              'Debouncing scroll or resize events',
+              'Using synchronous XHR requests',
+              'Mutating the DOM inside loops without batching',
+              'Triggering layout thrashes intentionally'
+            ],
+            answer: 0,
+            explanation: 'Debouncing reduces event frequency, preventing repeated expensive calculations.',
+            metadata: 'UX optimization'
+          }
+        ]
+      },
+      accessibility: {
+        label: 'Accessibility & Inclusive Design',
+        questions: [
+          {
+            id: 'a11y-contrast',
+            difficulty: 'foundations',
+            subtopic: 'Visual design',
+            prompt: 'What is the minimum contrast ratio required for normal body text under WCAG AA?',
+            options: ['4.5 : 1', '2 : 1', '7 : 1', '3 : 1'],
+            answer: 0,
+            explanation: 'WCAG AA specifies a contrast ratio of at least 4.5 : 1 for text under 18px regular weight.',
+            metadata: 'Inclusive visuals'
+          },
+          {
+            id: 'a11y-keyboard',
+            difficulty: 'intermediate',
+            subtopic: 'Interactions',
+            prompt: 'Which statement best describes a keyboard trap?',
+            options: [
+              'When a user cannot move focus away from an element using the keyboard',
+              'When keyboard focus defaults to the body',
+              'When focus jumps to the top of the page unexpectedly',
+              'When keyboard users skip interactive elements'
+            ],
+            answer: 0,
+            explanation: 'Keyboard traps block users from navigating away, preventing full keyboard accessibility.',
+            metadata: 'WCAG 2.1 - 2.1.2'
+          },
+          {
+            id: 'a11y-screen-reader',
+            difficulty: 'advanced',
+            subtopic: 'Assistive tech',
+            prompt: 'Which ARIA role should accompany custom modal dialogs?',
+            options: ['dialog', 'banner', 'alertdialog', 'group'],
+            answer: 0,
+            explanation: 'role="dialog" with accessible labelling ensures screen readers announce modals properly.',
+            metadata: 'ARIA Authoring Guide'
+          }
+        ]
+      },
+      tailwind: {
+        label: 'Tailwind Utility Patterns',
+        questions: [
+          {
+            id: 'tailwind-utility',
+            difficulty: 'foundations',
+            subtopic: 'Utilities',
+            prompt: 'Which utility adjusts letter-spacing in TailwindCSS?',
+            options: ['tracking-wide', 'leading-relaxed', 'space-x-4', 'font-semibold'],
+            answer: 0,
+            explanation: '`tracking-*` utilities control letter spacing, ideal for uppercase headings.',
+            metadata: 'Design tokens'
+          },
+          {
+            id: 'tailwind-responsive',
+            difficulty: 'intermediate',
+            subtopic: 'Responsive design',
+            prompt: 'Which prefix targets large screens (≥1024px) in Tailwind default config?',
+            options: ['lg:', 'md:', 'xl:', '2xl:'],
+            answer: 0,
+            explanation: '`lg:` applies styles at the 1024px breakpoint and above with the default config.',
+            metadata: 'Utility breakpoints'
+          },
+          {
+            id: 'tailwind-config',
+            difficulty: 'advanced',
+            subtopic: 'Customization',
+            prompt: 'How do you create a custom color palette accessible as brand-primary in Tailwind?',
+            options: [
+              'Extend theme.colors in tailwind.config.js',
+              'Add a CSS variable in :root',
+              'Set background-color directly on html',
+              'Use inline styles in HTML'
+            ],
+            answer: 0,
+            explanation: 'Tailwind respects theme extensions defined via the configuration file for consistent palette usage.',
+            metadata: 'Design system integration'
+          }
+        ]
+      },
+      git: {
+        label: 'Git & Collaboration',
+        questions: [
+          {
+            id: 'git-rebase',
+            difficulty: 'intermediate',
+            subtopic: 'History',
+            prompt: 'What does git rebase main accomplish on a feature branch?',
+            options: [
+              'Replays your commits on top of main for a linear history',
+              'Creates a merge commit while keeping both histories',
+              'Deletes your feature branch',
+              'Resets main to your feature branch'
+            ],
+            answer: 0,
+            explanation: 'Rebase keeps history clean by reapplying your work atop the latest main branch commits.',
+            metadata: 'Collaboration hygiene'
+          },
+          {
+            id: 'git-stash',
+            difficulty: 'foundations',
+            subtopic: 'Productivity',
+            prompt: 'Which command saves changes temporarily without committing?',
+            options: ['git stash', 'git reset', 'git revert', 'git cherry-pick'],
+            answer: 0,
+            explanation: '

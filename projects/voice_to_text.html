@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voice to Text — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { primary: '#063F5E', secondary: '#1a1a69', gray: '#6B7280' } } } } };
+  </script>
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    html{scroll-behavior:smooth}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-white text-slate-800">
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-100">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <a href="../index.html" class="flex items-center gap-2"><img src="../assets/logo.png" class="h-8" alt="logo"><span class="font-semibold" style="color:var(--brand-primary)">SimHireEstate</span></a>
+      <a href="../projects.html" class="text-sm hover:text-brand-secondary">Back to Projects</a>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <section class="bg-gradient-to-br from-brand-primary to-brand-secondary text-white">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 class="text-2xl font-bold">Voice to Text (Speech Recognition)</h1>
+        <p class="text-slate-100">Record speech and convert it to text using your browser.</p>
+      </div>
+    </section>
+
+    <section class="py-8">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="p-5 bg-white border border-slate-200 rounded-lg">
+          <div class="flex items-center gap-2">
+            <button id="startBtn" class="px-3 py-2 rounded-md text-white" style="background:var(--brand-secondary)">Start</button>
+            <button id="stopBtn" class="px-3 py-2 rounded-md border border-slate-200">Stop</button>
+            <select id="lang" class="px-2 py-2 border border-slate-200 rounded-md text-sm">
+              <option value="en-US">English (US)</option>
+              <option value="en-GB">English (UK)</option>
+              <option value="fr-FR">Français (FR)</option>
+              <option value="rw-RW">Kinyarwanda (RW)</option>
+            </select>
+            <span id="status" class="ml-auto text-xs px-2 py-0.5 rounded-full bg-slate-50 text-slate-700 border border-slate-200">Idle</span>
+          </div>
+          <textarea id="output" rows="10" class="mt-4 w-full border border-slate-200 rounded-md p-3" placeholder="Recognized text will appear here..."></textarea>
+          <p class="mt-2 text-xs text-slate-500">Note: Availability varies by browser. Try Chrome for best results.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-100">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-slate-600 flex items-center justify-between">
+      <span>© <span id="year"></span> SimHireEstate</span>
+      <a class="hover:text-brand-secondary" href="../contact.html">Contact</a>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const output = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+    const lang = document.getElementById('lang');
+
+    if(!recognition){
+      startBtn.disabled = true; stopBtn.disabled = true;
+      statusEl.textContent = 'Unsupported';
+      statusEl.className = 'ml-auto text-xs px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200';
+    } else {
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = lang.value;
+
+      lang.addEventListener('change', ()=>{ recognition.lang = lang.value; });
+
+      recognition.onstart = ()=>{ statusEl.textContent = 'Listening'; statusEl.className = 'ml-auto text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100'; };
+      recognition.onend = ()=>{ statusEl.textContent = 'Idle'; statusEl.className = 'ml-auto text-xs px-2 py-0.5 rounded-full bg-slate-50 text-slate-700 border border-slate-200'; };
+      recognition.onerror = (e)=>{ statusEl.textContent = 'Error'; statusEl.className = 'ml-auto text-xs px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200'; console.warn(e); };
+
+      recognition.onresult = (e)=>{
+        let finalText = '';
+        for(let i=e.resultIndex; i<e.results.length; i++){
+          const res = e.results[i];
+          if(res.isFinal){ finalText += res[0].transcript + ' '; }
+        }
+        if(finalText){ output.value += finalText; output.scrollTop = output.scrollHeight; }
+      };
+
+      startBtn.addEventListener('click', ()=>{ try { recognition.start(); } catch(_){} });
+      stopBtn.addEventListener('click', ()=> recognition.stop());
+    }
+  </script>
+</body>
+</html>

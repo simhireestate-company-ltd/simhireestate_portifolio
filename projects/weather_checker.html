@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — Weather Checker</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
+      color: #0f172a;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .app {
+      width: 100%;
+      max-width: 1080px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    header .brand { display:flex; align-items:center; gap:10px; }
+    header .brand img { height: 28px; width:auto; }
+    header h1 { font-size: 18px; margin:0; color: var(--brand-primary); }
+
+    .controls {
+      margin-top: 14px;
+      display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center;
+    }
+    .controls input[type="text"] {
+      width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 14px;
+    }
+    .btn { cursor: pointer; border: none; border-radius: 10px; padding: 10px 12px; font-weight: 600; color: #fff; background: var(--brand-secondary); }
+    .btn.secondary { background: #0ea5e9; }
+    .toggle {
+      display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color:#475569;
+    }
+
+    .grid { display: grid; gap: 16px; margin-top: 16px; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 360px 1fr; } }
+
+    .panel { border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; background: #ffffff; }
+    .panel h2 { font-size: 16px; color: var(--brand-primary); margin: 0 0 10px 0; }
+
+    .current {
+      display:grid; gap: 10px;
+      grid-template-columns: auto 1fr; align-items: center;
+    }
+    .current .icon { font-size: 42px; }
+    .current .temp { font-size: 36px; font-weight: 700; }
+    .meta { color: #475569; font-size: 13px; }
+
+    .details { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+    .detail { background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; padding:10px; font-size:13px; }
+
+    .h-scroll { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; }
+    .chip { min-width: 100px; border:1px solid #e5e7eb; border-radius:10px; padding:8px; background:#f9fafb; font-size: 12px; text-align:center; }
+
+    .footer-row { display:flex; align-items:center; justify-content:space-between; color:#64748b; font-size:12px; margin-top: 10px; }
+    .status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; display:inline-block; }
+    .status-offline { background:#f59e0b; }
+
+    .aqi { display:flex; align-items:center; gap:8px; }
+    .aqi-badge { padding:4px 8px; border-radius:999px; font-weight:700; font-size:12px; color:#fff; }
+
+    .search-results {
+      position: absolute; z-index: 10; background:#fff; border:1px solid #e5e7eb; border-radius:10px; margin-top: 4px; width: 100%;
+      max-height: 220px; overflow:auto; box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    .search-item { padding:8px 10px; cursor:pointer; }
+    .search-item:hover { background:#f1f5f9; }
+
+    .legend { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:#475569; }
+    .legend span { display:inline-flex; align-items:center; gap:6px; }
+    .dot { width:10px; height:10px; border-radius: 3px; display:inline-block; }
+
+    canvas { max-width: 100%; height: 140px; background:#ffffff; border:1px solid #e5e7eb; border-radius:10px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <img src="../assets/logo.png" alt="SimHireEstate" />
+        <h1>Weather Checker</h1>
+      </div>
+      <div class="toggle">
+        <input type="checkbox" id="unitToggle" />
+        <label for="unitToggle">Show °F</label>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div style="position:relative">
+        <input id="cityInput" type="text" placeholder="Search city (e.g., Kigali, Nairobi, Paris)" autocomplete="off" />
+        <div id="searchResults" class="search-results" style="display:none"></div>
+      </div>
+      <button class="btn" id="useLocation">Use my location</button>
+      <button class="btn secondary" id="refreshBtn">Refresh</button>
+    </div>
+
+    <div class="grid">
+      <!-- Left: Current + details -->
+      <section class="panel">
+        <h2>Current Conditions</h2>
+        <div class="current">
+          <div class="icon" id="icon">⛅</div>
+          <div>
+            <div class="temp" id="temp">--°C</div>
+            <div class="meta" id="summary">Loading…</div>
+            <div class="meta" id="place">—</div>
+          </div>
+        </div>
+        <div class="details" style="margin-top:12px">
+          <div class="detail">Feels like: <strong id="feelsLike">—</strong></div>
+          <div class="detail">Humidity: <strong id="humidity">—</strong></div>
+          <div class="detail">Wind: <strong id="wind">—</strong></div>
+          <div class="detail">UV Index: <strong id="uv">—</strong></div>
+          <div class="detail">Sunrise: <strong id="sunrise">—</strong></div>
+          <div class="detail">Sunset: <strong id="sunset">—</strong></div>
+        </div>
+        <div class="footer-row">
+          <span><span id="statusDot" class="status-dot"></span> <span id="statusText">Online</span></span>
+          <span id="updatedAt">—</span>
+        </div>
+      </section>
+
+      <!-- Right: Charts + AQI -->
+      <section class="panel">
+        <h2>Precipitation & Temperature (next 24h)</h2>
+        <div class="legend" style="margin-bottom:6px">
+          <span><span class="dot" style="background:#60a5fa"></span> Precip %</span>
+          <span><span class="dot" style="background:#f59e0b"></span> Temp</span>
+        </div>
+        <canvas id="chart" width="600" height="140"></canvas>
+        <div style="margin-top:12px">
+          <h2>Air Quality</h2>
+          <div class="aqi">
+            <span id="aqiBadge" class="aqi-badge" style="background:#16a34a">Good</span>
+            <span id="aqiDetails" class="meta">—</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top:16px">
+      <h2>Forecast</h2>
+      <div class="h-scroll" id="hourly"></div>
+      <div class="h-scroll" id="daily" style="margin-top:10px"></div>
+    </section>
+
+    <section class="panel" style="margin-top:16px">
+      <h2>Severe Weather Alerts</h2>
+      <div id="alerts" class="meta">No alerts.</div>
+    </section>
+
+    <section class="panel" style="margin-top:16px">
+      <h2>Radar</h2>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+        <button class="btn" id="radarPlay">Play</button>
+        <button class="btn secondary" id="radarPause">Pause</button>
+        <span class="meta" id="radarTime">—</span>
+      </div>
+      <div id="map" style="width:100%; height:480px; border-radius:12px; border:1px solid #e5e7eb"></div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // --- Utilities ---
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      unit: localStorage.getItem('weather_unit') || 'C', // 'C' or 'F'
+      last: JSON.parse(localStorage.getItem('weather_last') || 'null'),
+      online: true,
+      loc: null,
+      radar: { frames: [], idx: 0, timer: null, imgCache: new Map() }
+    };
+
+    const weatherCodeMap = {
+      0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+      45: 'Fog', 48: 'Depositing rime fog',
+      51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle',
+      61: 'Light rain', 63: 'Rain', 65: 'Heavy rain',
+      71: 'Light snow', 73: 'Snow', 75: 'Heavy snow',
+      77: 'Snow grains', 80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy rain showers',
+      85: 'Snow showers', 86: 'Heavy snow showers',
+      95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Thunderstorm with heavy hail',
+    };
+    const weatherIconMap = (code) => {
+      if ([0].includes(code)) return '☀️';
+      if ([1,2].includes(code)) return '⛅';
+      if ([3].includes(code)) return '☁️';
+      if ([45,48].includes(code)) return '🌫️';
+      if ([51,53,55,61,63,65,80,81,82].includes(code)) return '🌧️';
+      if ([71,73,75,77,85,86].includes(code)) return '🌨️';
+      if ([95,96,99].includes(code)) return '⛈️';
+      return '🌡️';
+    };
+
+    const toF = (c) => (c * 9/5) + 32;
+    const fmtT = (c) => state.unit === 'C' ? `${Math.round(c)}°C` : `${Math.round(toF(c))}°F`;
+
+    function setStatus(online) {
+      state.online = online;
+      $('statusDot').classList.toggle('status-offline', !online);
+      $('statusText').textContent = online ? 'Online' : 'Offline (cached)';
+    }
+
+    // --- Search (Open-Meteo Geocoding) ---
+    let searchTimer = null;
+    $('cityInput').addEventListener('input', () => {
+      const q = $('cityInput').value.trim();
+      if (!q) { $('searchResults').style.display = 'none'; $('searchResults').innerHTML=''; return; }
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
+          const data = await res.json();
+          const list = (data.results || []).map(r => ({
+            name: `${r.name}${r.admin1 ? ', '+r.admin1 : ''}, ${r.country_code}`,
+            lat: r.latitude, lon: r.longitude
+          }));
+          const box = $('searchResults');
+          box.innerHTML = list.map((r,i)=>`<div class='search-item' data-i='${i}'>${r.name}</div>`).join('');
+          box.style.display = list.length ? 'block' : 'none';
+          box.querySelectorAll('.search-item').forEach((el)=>{
+            el.addEventListener('click',()=>{
+              const idx = +el.getAttribute('data-i');
+              const sel = list[idx];
+              $('cityInput').value = sel.name;
+              box.style.display='none';
+              loadByCoords(sel.lat, sel.lon, sel.name);
+            });
+          });
+        } catch(e) {
+          console.warn('geocoding failed', e);
+        }
+      }, 350);
+    });
+
+    // --- Location ---
+    $('useLocation').addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        alert('Geolocation not supported. Please search by city.');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          // reverse geocode
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&language=en&format=json`);
+          const data = await res.json();
+          const name = data?.results?.[0] ? `${data.results[0].name}${data.results[0].admin1 ? ', '+data.results[0].admin1 : ''}, ${data.results[0].country_code}` : `Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}`;
+          $('cityInput').value = name;
+          loadByCoords(latitude, longitude, name);
+        } catch {
+          $('cityInput').value = `Lat ${latitude.toFixed(2)}, Lon ${longitude.toFixed(2)}`;
+          loadByCoords(latitude, longitude, $('cityInput').value);
+        }
+      }, (err) => {
+        alert('Permission denied. Please search by city.');
+        console.warn(err);
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    });
+
+    $('refreshBtn').addEventListener('click', () => {
+      if (state.loc) loadByCoords(state.loc.lat, state.loc.lon, state.loc.name, true);
+      else if (state.last?.loc) loadByCoords(state.last.loc.lat, state.last.loc.lon, state.last.loc.name, true);
+    });
+
+    // Unit toggle
+    $('unitToggle').checked = state.unit === 'F';
+    $('unitToggle').addEventListener('change', () => {
+      state.unit = $('unitToggle').checked ? 'F' : 'C';
+      localStorage.setItem('weather_unit', state.unit);
+      // re-render with current data
+      if (state.last?.data) renderAll(state.last.loc, state.last.data, state.last.air, false);
+    });
+
+    // --- Fetch Weather from Open-Meteo ---
+    async function loadByCoords(lat, lon, name, force = false) {
+      state.loc = { lat, lon, name };
+      setStatus(true);
+      try {
+        const wUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max&timezone=auto`;
+        const aUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=european_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,sulphur_dioxide&timezone=auto`;
+        const alUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=auto&daily=weather_code&current=temperature_2m&past_days=0&hourly=weather_code&alerts=true`;
+        const [wRes, aRes, alRes] = await Promise.all([fetch(wUrl), fetch(aUrl), fetch(alUrl)]);
+        const [wData, aData, alData] = await Promise.all([wRes.json(), aRes.json(), alRes.json()]);
+        renderAll({lat, lon, name}, wData, aData, true);
+        renderAlerts(alData);
+        localStorage.setItem('weather_last', JSON.stringify({ loc: {lat, lon, name}, data: wData, air: aData, savedAt: Date.now() }));
+        $('updatedAt').textContent = `Updated: ${new Date().toLocaleString()}`;
+      } catch (e) {
+        console.warn(e);
+        setStatus(false);
+        if (state.last?.data) {
+          renderAll(state.last.loc, state.last.data, state.last.air, false);
+          $('updatedAt').textContent = `Cached: ${new Date(state.last.savedAt).toLocaleString()}`;
+        } else {
+          $('summary').textContent = 'Unable to load weather. Check connection or try city search.';
+        }
+      }
+    }
+
+    function renderAll(loc, w, a, online) {
+      setStatus(online);
+      $('place').textContent = loc?.name || '—';
+      const c = w.current;
+      $('icon').textContent = weatherIconMap(c.weather_code);
+      $('temp').textContent = fmtT(c.temperature_2m);
+      $('summary').textContent = weatherCodeMap[c.weather_code] || '—';
+      $('feelsLike').textContent = fmtT(c.apparent_temperature);
+      $('humidity').textContent = `${c.relative_humidity_2m}%`;
+      $('wind').textContent = `${Math.round(c.wind_speed_10m)} km/h (${c.wind_direction_10m}°)`;
+      $('uv').textContent = w.daily?.uv_index_max?.[0] ?? '—';
+      $('sunrise').textContent = fmtLocalTime(w.daily?.sunrise?.[0]);
+      $('sunset').textContent = fmtLocalTime(w.daily?.sunset?.[0]);
+
+      renderHourly(w);
+      renderDaily(w);
+      renderChart(w);
+      renderAir(a);
+      if (loc?.lat && loc?.lon) initMap(loc.lat, loc.lon);
+    }
+
+    function fmtLocalTime(s) { if (!s) return '—'; const d = new Date(s); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+
+    function renderHourly(w) {
+      const box = $('hourly');
+      const hours = w.hourly?.time?.slice(0,24) || [];
+      const temps = w.hourly?.temperature_2m?.slice(0,24) || [];
+      const pops = w.hourly?.precipitation_probability?.slice(0,24) || [];
+      box.innerHTML = hours.map((t,i)=>{
+        const hh = new Date(t).toLocaleTimeString([], {hour:'2-digit'});
+        return `<div class="chip"><div style='font-weight:700'>${hh}</div><div>${fmtT(temps[i])}</div><div style='color:#3b82f6'>${pops[i] ?? 0}%</div></div>`;
+      }).join('');
+    }
+
+    function renderDaily(w) {
+      const box = $('daily');
+      const days = w.daily?.time || [];
+      const code = w.daily?.weather_code || [];
+      const tmax = w.daily?.temperature_2m_max || [];
+      const tmin = w.daily?.temperature_2m_min || [];
+      box.innerHTML = days.map((d,i)=>{
+        const dd = new Date(d).toLocaleDateString([], { weekday:'short' });
+        return `<div class="chip" style="min-width:120px"><div style='font-weight:700'>${dd}</div><div>${weatherIconMap(code[i])} ${weatherCodeMap[code[i]]||''}</div><div>${fmtT(tmin[i])} / <strong>${fmtT(tmax[i])}</strong></div></div>`;
+      }).join('');
+    }
+
+    function renderAlerts(al){
+      const box = $('alerts');
+      const alerts = al?.alerts || [];
+      if (!alerts.length) { box.textContent = 'No alerts.'; return; }
+      box.innerHTML = alerts.map(a=>{
+        const start = a.onset ? new Date(a.onset).toLocaleString() : ''; 
+        const ends = a.ends ? new Date(a.ends).toLocaleString() : '';
+        return `<div style='border:1px solid #fee2e2; background:#fff7ed; border-radius:10px; padding:8px; margin:6px 0'>
+          <div style='font-weight:700; color:#b91c1c'>${a.event || 'Alert'}</div>
+          <div class='meta'>${a.sender_name || ''} ${start? '· '+start: ''} ${ends? '→ '+ends: ''}</div>
+          <div style='font-size:13px; color:#374151; margin-top:4px'>${(a.description||'').replace(/\n/g,'<br>')}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderAir(a) {
+      const aq = a?.current?.european_aqi; // 0-100+ lower is better (Open-Meteo uses EAQI index 1–6 categories often)
+      if (aq == null) { $('aqiBadge').textContent = 'N/A'; $('aqiDetails').textContent = 'Air data unavailable'; return; }
+      const { label, color, note } = aqiCategory(aq);
+      $('aqiBadge').textContent = `${label} (${aq})`;
+      $('aqiBadge').style.background = color;
+      const pm25 = a?.current?.pm2_5, pm10 = a?.current?.pm10;
+      $('aqiDetails').textContent = `${note} — PM2.5: ${pm25 ?? '—'} µg/m³, PM10: ${pm10 ?? '—'} µg/m³`;
+    }
+
+    function aqiCategory(aq) {
+      if (aq <= 20) return { label: 'Good', color: '#16a34a', note:'Air quality is satisfactory' };
+      if (aq <= 40) return { label: 'Fair', color: '#22c55e', note:'Acceptable air quality' };
+      if (aq <= 60) return { label: 'Moderate', color: '#f59e0b', note:'Sensitive groups should limit outdoor activity' };
+      if (aq <= 80) return { label: 'Poor', color: '#ef4444', note:'Everyone may begin to experience health effects' };
+      return { label: 'Very Poor', color: '#7f1d1d', note:'Health warnings of emergency conditions' };
+    }
+
+    // Simple chart (no library): precipitation probability (blue bars) + temperature (orange line)
+    // Radar using Rainviewer tiles on Leaflet
+    let map, radarLayerGroup = null, radarFrames = [], radarIdx = 0, radarTimer = null;
+
+    async function initMap(lat, lon){
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18, attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+        radarLayerGroup = L.layerGroup().addTo(map);
+      } else {
+        map.setView([lat, lon], 7);
+      }
+      await loadRadarFrames();
+      drawRadarFrame(radarIdx);
+    }
+
+    async function loadRadarFrames(){
+      try {
+        const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+        const data = await res.json();
+        const timeline = data?.radar?.past || [];
+        const last = data?.radar?.nowcast || [];
+        radarFrames = [...timeline.slice(-6), ...last.slice(0,4)]; // recent + short‑term future
+        radarIdx = Math.max(0, radarFrames.length - 1);
+      } catch(e){ console.warn('radar load failed', e); }
+    }
+
+    function drawRadarFrame(i){
+      if (!map || !radarFrames?.length) return;
+      radarLayerGroup.clearLayers();
+      const f = radarFrames[i];
+      const url = `https://tilecache.rainviewer.com/v2/radar/${f.path}/256/{z}/{x}/{y}/2/1_1.png`;
+      const layer = L.tileLayer(url, { opacity: 0.75 });
+      layer.addTo(radarLayerGroup);
+      $('radarTime').textContent = new Date(f.time * 1000).toLocaleString();
+    }
+
+    function playRadar(){ if (radarTimer) return; radarTimer = setInterval(()=>{ radarIdx = (radarIdx + 1) % radarFrames.length; drawRadarFrame(radarIdx); }, 600); }
+    function pauseRadar(){ if (!radarTimer) return; clearInterval(radarTimer); radarTimer = null; }
+
+    $('radarPlay').addEventListener('click', playRadar);
+    $('radarPause').addEventListener('click', pauseRadar);
+
+    function renderChart(w) {
+      const c = document.getElementById('chart');
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0,0,c.width,c.height);
+      const hours = w.hourly?.time?.slice(0,24) || [];
+      const pops = w.hourly?.precipitation_probability?.slice(0,24) || [];
+      const tempsC = w.hourly?.temperature_2m?.slice(0,24) || [];
+      const temps = state.unit==='C' ? tempsC : tempsC.map(toF);
+
+      const pad = 24;
+      const H = c.height, W = c.width;
+      const innerH = H - pad*2, innerW = W - pad*2;
+
+      // axes
+      ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad, pad); ctx.lineTo(pad, H-pad); ctx.lineTo(W-pad, H-pad);
+      ctx.stroke();
+
+      // Bars for precip % (0..100)
+      const bw = innerW / hours.length - 4;
+      pops.forEach((p, i) => {
+        const x = pad + i * (innerW / hours.length) + 2;
+        const h = (p/100) * innerH;
+        ctx.fillStyle = '#60a5fa';
+        ctx.fillRect(x, H - pad - h, bw, h);
+      });
+
+      // Line for temperature
+      const tMin = Math.min(...temps), tMax = Math.max(...temps);
+      const yForT = (t) => H - pad - ((t - tMin) / Math.max(1,(tMax - tMin))) * innerH;
+      ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = '#f59e0b';
+      temps.forEach((t,i) => {
+        const x = pad + i * (innerW / hours.length) + bw/2;
+        const y = yForT(t);
+        if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    }
+
+    // Startup: if we have last cached, render it immediately, then try location or wait for user input
+    (function init(){
+      if (state.last?.data) {
+        renderAll(state.last.loc, state.last.data, state.last.air, false);
+        $('updatedAt').textContent = `Cached: ${new Date(state.last.savedAt).toLocaleString()}`;
+      }
+      // Try geolocation auto (non-blocking); some environments require HTTPS
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(p => {
+          const { latitude, longitude } = p.coords;
+          loadByCoords(latitude, longitude, 'My Location');
+        }, () => {/* ignore */}, { timeout: 6000 });
+      }
+    })();
+  </script>
+</body>
+</html>

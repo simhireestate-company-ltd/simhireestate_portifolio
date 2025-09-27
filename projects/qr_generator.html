@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QR Code Generator — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:{primary:'#063F5E',secondary:'#1a1a69'}}}}}</script>
+  <style>:root{--brand-primary:#063F5E;--brand-secondary:#1a1a69}</style>
+  <!-- Use qrcode library with options support -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body class="min-h-screen bg-white text-slate-800">
+  <div class="max-w-3xl mx-auto px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold" style="color:var(--brand-primary)">QR Code Generator</h1>
+      <a href="../projects.html" class="text-sm text-white px-3 py-2 rounded" style="background:var(--brand-secondary)">Back</a>
+    </header>
+
+    <section class="p-4 border rounded-lg bg-white">
+      <div class="grid sm:grid-cols-2 gap-4">
+        <label class="text-sm">Content
+          <textarea id="content" class="mt-1 w-full border rounded px-3 py-2" rows="4" placeholder="Enter text, URL, or use templates below"></textarea>
+        </label>
+        <div class="space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <label class="text-sm">Size (px)
+              <input id="size" type="number" min="64" max="1024" value="256" class="mt-1 w-full border rounded px-3 py-2" />
+            </label>
+            <label class="text-sm">Margin
+              <input id="margin" type="number" min="0" max="16" value="2" class="mt-1 w-full border rounded px-3 py-2" />
+            </label>
+          </div>
+          <div class="grid grid-cols-2 gap-2 items-end">
+            <label class="text-sm">Error Level
+              <select id="ecc" class="mt-1 w-full border rounded px-3 py-2">
+                <option value="L">L (low)</option>
+                <option value="M" selected>M (medium)</option>
+                <option value="Q">Q (quartile)</option>
+                <option value="H">H (high)</option>
+              </select>
+            </label>
+            <label class="text-sm">Foreground
+              <input id="fg" type="color" value="#000000" class="mt-1 w-full border rounded px-2 py-1" />
+            </label>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="text-sm">Background
+              <input id="bg" type="color" value="#ffffff" class="mt-1 w-full border rounded px-2 py-1" />
+            </label>
+            <div class="flex gap-2 items-end">
+              <button id="gen" class="flex-1 px-4 py-2 text-white rounded" style="background:var(--brand-secondary)">Generate</button>
+              <button id="reset" class="px-4 py-2 border rounded" style="border-color:#E5E7EB">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3 flex flex-wrap gap-2 text-sm">
+        <button data-t="url" class="tpl px-3 py-1.5 border rounded" style="border-color:#E5E7EB">URL</button>
+        <button data-t="wifi" class="tpl px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Wi‑Fi</button>
+        <button data-t="vcard" class="tpl px-3 py-1.5 border rounded" style="border-color:#E5E7EB">vCard</button>
+        <button data-t="sms" class="tpl px-3 py-1.5 border rounded" style="border-color:#E5E7EB">SMS</button>
+        <button data-t="geo" class="tpl px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Geo</button>
+      </div>
+
+      <div class="mt-5 grid md:grid-cols-2 gap-4">
+        <div>
+          <h3 class="font-semibold mb-2">Preview</h3>
+          <canvas id="canvas" class="border rounded w-full" width="256" height="256"></canvas>
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">Export</h3>
+          <div class="flex flex-wrap gap-2">
+            <button id="dlPng" class="px-3 py-2 text-white rounded" style="background:var(--brand-secondary)">Download PNG</button>
+            <button id="dlJpg" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Download JPG</button>
+            <button id="copy" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Copy to Clipboard</button>
+            <button id="share" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Share</button>
+          </div>
+          <div class="mt-3 text-xs text-slate-500">Tip: Use high size (512–1024px) for print. Keep strong contrast for reliable scanning.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const content = $('#content');
+    const canvas = $('#canvas');
+    const sizeInp = $('#size');
+    const marginInp = $('#margin');
+    const fgInp = $('#fg');
+    const bgInp = $('#bg');
+    const eccSel = $('#ecc');
+
+    async function renderQR(){
+      const text = content.value.trim();
+      const size = Math.max(64, Math.min(1024, +sizeInp.value || 256));
+      const margin = Math.max(0, Math.min(16, +marginInp.value || 2));
+      canvas.width = size; canvas.height = size;
+      if(!text){ const ctx=canvas.getContext('2d'); ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,size,size); return; }
+      await QRCode.toCanvas(canvas, text, {
+        width: size,
+        margin,
+        errorCorrectionLevel: eccSel.value,
+        color: { dark: fgInp.value, light: bgInp.value }
+      });
+    }
+
+    // Templates
+    function applyTemplate(type){
+      if(type==='url') content.value = 'https://simhireestate.com/';
+      if(type==='wifi') content.value = 'WIFI:T:WPA;S:MyWiFi;P:password123;;';
+      if(type==='vcard') content.value = 'BEGIN:VCARD\nVERSION:3.0\nN:Doe;John;;;\nFN:John Doe\nORG:SimHireEstate\nTEL;TYPE=CELL:+250793122136\nEMAIL:info@simhireestate.com\nEND:VCARD';
+      if(type==='sms') content.value = 'SMSTO:+250793122136:Hello from QR!';
+      if(type==='geo') content.value = 'geo:-1.9441,30.0619';
+      renderQR();
+    }
+
+    // Events
+    document.querySelectorAll('.tpl').forEach(b=> b.addEventListener('click', e=> applyTemplate(e.currentTarget.dataset.t)));
+    ;[content,sizeInp,marginInp,fgInp,bgInp,eccSel].forEach(el=> el.addEventListener('input', renderQR));
+    $('#gen').addEventListener('click', renderQR);
+    $('#reset').addEventListener('click', ()=>{ content.value=''; sizeInp.value=256; marginInp.value=2; fgInp.value='#000000'; bgInp.value='#ffffff'; eccSel.value='M'; renderQR(); });
+
+    function download(type){
+      const mime = type==='png'?'image/png':'image/jpeg';
+      const url = canvas.toDataURL(mime, type==='png'?1:0.92);
+      const a=document.createElement('a'); a.href=url; a.download=`qrcode.${type}`; a.click();
+    }
+    $('#dlPng').addEventListener('click', ()=> download('png'));
+    $('#dlJpg').addEventListener('click', ()=> download('jpg'));
+
+    $('#copy').addEventListener('click', async ()=>{
+      try{
+        const blob = await new Promise(res=> canvas.toBlob(res, 'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        alert('Copied to clipboard');
+      }catch{ alert('Copy not supported'); }
+    });
+
+    $('#share').addEventListener('click', async ()=>{
+      try{
+        const blob = await new Promise(res=> canvas.toBlob(res, 'image/png'));
+        const file = new File([blob], 'qrcode.png', { type:'image/png' });
+        if(navigator.share && navigator.canShare?.({ files:[file] })){
+          await navigator.share({ files:[file], title:'QR Code', text:'Generated with SimHireEstate QR' });
+        } else {
+          const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='qrcode.png'; a.click();
+        }
+      }catch(e){ console.error(e); }
+    });
+
+    renderQR();
+  </script>
+</body>
+</html>

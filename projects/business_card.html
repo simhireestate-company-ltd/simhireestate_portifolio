@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — Digital Business Card</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; background:#f1f5f9; color:#0f172a; }
+    header { position:sticky; top:0; background:#fff; border-bottom:1px solid #e5e7eb; z-index:10; }
+    header .wrap { max-width: 980px; margin: 0 auto; display:flex; align-items:center; justify-content:space-between; padding: 12px 16px; }
+    header .brand { display:flex; align-items:center; gap:10px; }
+    header img { height:28px; width:auto; }
+    header h1 { margin:0; font-size:18px; color: var(--brand-primary); }
+
+    main { max-width: 980px; margin: 16px auto; padding: 0 16px; }
+
+    .grid { display:grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 900px){ .grid { grid-template-columns: 360px 1fr; } }
+
+    .panel { background:#fff; border:1px solid #e5e7eb; border-radius: 14px; padding: 14px; }
+    .panel h2 { font-size: 16px; margin: 0 0 12px 0; color: var(--brand-primary); }
+
+    .form-grid { display:grid; gap:10px; grid-template-columns: 1fr; }
+    .row { display:grid; gap:10px; grid-template-columns: 1fr 1fr; }
+    input, textarea, select { width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius: 10px; font-size:14px; }
+    textarea { min-height: 90px; }
+    .btn { cursor:pointer; border:none; padding:10px 12px; border-radius:10px; font-weight:700; color:#fff; background: var(--brand-secondary); }
+    .btn.secondary { background: #0ea5e9; }
+    .btn.outline { background: transparent; color: var(--brand-secondary); border: 1px solid var(--brand-secondary); }
+
+    .preview-wrap { display:grid; gap:12px; }
+    .card {
+      background: linear-gradient(160deg, var(--brand-primary), var(--brand-secondary));
+      color:#fff; border-radius:16px; padding:18px; min-height: 160px; position:relative; overflow:hidden;
+    }
+    .card .row { display:flex; align-items:center; justify-content:space-between; }
+    .card .name { font-size: 22px; font-weight: 800; }
+    .card .title { font-size: 14px; opacity:.9; }
+    .card .company { font-size: 13px; opacity:.9; }
+    .card .contact { margin-top: 10px; font-size: 13px; display:grid; gap:4px; }
+    .card .logo { position:absolute; right: 12px; bottom: 12px; height: 42px; width:auto; opacity: .8; }
+
+    .qr { display:flex; align-items:center; gap:12px; }
+    canvas { background:#fff; border:1px solid #e5e7eb; border-radius:10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand">
+        <img src="../assets/logo.png" alt="SimHireEstate" />
+        <h1>Digital Business Card</h1>
+      </div>
+      <div>
+        <select id="imageFormat" class="btn outline" style="background:#fff;color:#1a1a69">
+          <option value="png">PNG</option>
+          <option value="jpeg">JPG</option>
+          <option value="webp">WEBP</option>
+          <option value="pdf">PDF</option>
+        </select>
+        <button class="btn secondary" id="downloadCard">Download</button>
+        <button class="btn outline" id="downloadQr">QR PNG</button>
+        <button class="btn outline" id="printCard">Print</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <section class="panel">
+        <h2>Your Details</h2>
+        <div class="form-grid">
+          <div class="row">
+            <input id="fullName" placeholder="Full name" value="Jane Doe" />
+            <input id="jobTitle" placeholder="Job title" value="Product Manager" />
+          </div>
+          <div class="row">
+            <input id="company" placeholder="Company" value="SimHireEstate" />
+            <select id="theme">
+              <option value="brand">Brand Theme</option>
+              <option value="blue">Gradient Blue</option>
+              <option value="sunset">Sunset Glow</option>
+              <option value="forest">Forest Green</option>
+              <option value="ocean">Ocean</option>
+              <option value="royal">Royal Purple</option>
+              <option value="sunrise">Sunrise</option>
+              <option value="lava">Lava</option>
+              <option value="ice">Ice</option>
+              <option value="grape">Grape</option>
+              <option value="midnight">Midnight</option>
+            </select>
+          </div>
+          <div class="row">
+            <select id="template">
+              <option value="classic">Template: Classic</option>
+              <option value="split">Template: Split</option>
+              <option value="minimal">Template: Minimal</option>
+              <option value="badge">Template: Badge</option>
+              <option value="photo-left">Template: Photo Left</option>
+            </select>
+          </div>
+          <div class="row">
+            <input id="phone" placeholder="Phone" value="+250 793 122 136" />
+            <input id="email" placeholder="Email" value="simhireestate@gmail.com" />
+          </div>
+          <input id="website" placeholder="Website or Profile URL" value="https://simhireestate.com" />
+          <textarea id="bio" placeholder="Short bio or tagline">Building tools that help people.</textarea>
+          <div class="row">
+            <input id="address" placeholder="Address" value="Kigali, Rwanda" />
+            <input id="logoUrl" placeholder="Logo URL (optional)" value="" />
+          </div>
+          <div style="font-size:12px; color:#64748b; margin-top:-6px;">Tip: For best results when exporting images, use the file uploader or a URL from a CORS-enabled host (allows cross-origin access).</div>
+          <div class="row">
+            <input type="file" id="logoFile" accept="image/*" />
+            <div id="logoWarn" style="font-size:12px; color:#ef4444; display:none;">External logo blocked by CORS. Use the file uploader or a different URL.</div>
+          </div>
+          <button class="btn" id="shareVcf">Download vCard (.vcf)</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Preview</h2>
+        <div class="preview-wrap">
+          <div class="card" id="card">
+            <div class="row">
+              <div>
+                <div class="name" id="pName">Jane Doe</div>
+                <div class="title" id="pTitle">Product Manager</div>
+                <div class="company" id="pCompany">SimHireEstate</div>
+              </div>
+              <img id="pLogo" class="logo" src="../assets/logo.png" alt="logo" crossOrigin="anonymous" />
+            </div>
+            <div class="contact">
+              <div id="pPhone">+250 793 122 136</div>
+              <div id="pEmail">simhireestate@gmail.com</div>
+              <div id="pWebsite">https://simhireestate.com</div>
+              <div id="pAddress">Kigali, Rwanda</div>
+            </div>
+          </div>
+          <div class="qr">
+            <canvas id="qrCanvas" width="140" height="140"></canvas>
+            <div style="font-size:13px; color:#475569">QR encodes a contact card (vCard). Scan to save contact.</div>
+          </div>
+          <div class="meta" style="font-size:12px; color:#64748b">Tip: Use the vCard download for accurate contact saving. The QR will also be scannable.</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Real QR and html2canvas libs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const themes = {
+      brand: 'linear-gradient(160deg, #063F5E, #1a1a69)',
+      blue: 'linear-gradient(160deg, #2563eb, #0ea5e9)',
+      sunset: 'linear-gradient(160deg, #fb923c, #ef4444)',
+      forest: 'linear-gradient(160deg, #16a34a, #065f46)',
+      ocean: 'linear-gradient(160deg, #06b6d4, #0ea5e9)',
+      royal: 'linear-gradient(160deg, #6d28d9, #4c1d95)',
+      sunrise: 'linear-gradient(160deg, #fde047, #f97316)',
+      lava: 'linear-gradient(160deg, #ef4444, #b91c1c)',
+      ice: 'linear-gradient(160deg, #93c5fd, #06b6d4)',
+      grape: 'linear-gradient(160deg, #a78bfa, #7c3aed)',
+      midnight: 'linear-gradient(160deg, #0f172a, #1e293b)'
+    };
+
+    function applyTheme(v){ el('card').style.background = themes[v] || themes.brand; }
+
+    function applyTemplate(t){
+      const card = el('card');
+      card.style.minHeight = '160px';
+      card.style.padding = '18px';
+      card.style.display = 'block';
+      const logo = el('pLogo');
+      logo.style.position = 'absolute'; logo.style.right = '12px'; logo.style.bottom = '12px'; logo.style.height = '42px';
+      if (t === 'split') {
+        card.style.display = 'grid'; card.style.gridTemplateColumns = '1fr auto'; card.style.alignItems = 'center';
+      } else if (t === 'minimal') {
+        card.style.borderRadius = '10px'; logo.style.opacity = .6;
+      } else if (t === 'badge') {
+        card.style.borderRadius = '24px'; card.style.padding = '22px'; logo.style.height = '48px';
+      } else if (t === 'photo-left') {
+        card.style.display = 'grid'; card.style.gridTemplateColumns = '80px 1fr';
+        logo.style.position = 'static'; logo.style.height = '64px';
+      }
+    }
+
+    function updatePreview(){
+      el('pName').textContent = el('fullName').value.trim() || '—';
+      el('pTitle').textContent = el('jobTitle').value.trim() || '—';
+      el('pCompany').textContent = el('company').value.trim() || '—';
+      el('pPhone').textContent = el('phone').value.trim() || '—';
+      el('pEmail').textContent = el('email').value.trim() || '—';
+      el('pWebsite').textContent = el('website').value.trim() || '—';
+      el('pAddress').textContent = el('address').value.trim() || '—';
+      const customLogo = el('logoUrl').value.trim();
+      if (customLogo) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { el('pLogo').src = customLogo; el('logoWarn').style.display = 'none'; };
+        img.onerror = () => { el('logoWarn').style.display = 'block'; };
+        img.src = customLogo;
+      } else {
+        el('logoWarn').style.display = 'none';
+        el('pLogo').src = '../assets/logo.png';
+      }
+      applyTheme(el('theme').value);
+      applyTemplate(el('template').value);
+      drawQR();
+    }
+
+    function buildVCard(){
+      const name = el('fullName').value.trim();
+      const title = el('jobTitle').value.trim();
+      const org = el('company').value.trim();
+      const tel = el('phone').value.trim();
+      const email = el('email').value.trim();
+      const url = el('website').value.trim();
+      const adr = el('address').value.trim();
+      return `BEGIN:VCARD\nVERSION:3.0\nN:${name};;;;\nFN:${name}\nTITLE:${title}\nORG:${org}\nTEL;TYPE=CELL:${tel}\nEMAIL:${email}\nURL:${url}\nADR;TYPE=WORK:${adr}\nEND:VCARD`;
+    }
+
+    // Real QR generation
+    function drawQR(){
+      const vcf = buildVCard();
+      const canvas = el('qrCanvas');
+      const tempDiv = document.createElement('div');
+      const qr = new QRCode(tempDiv, { text: vcf, width: canvas.width, height: canvas.height, correctLevel: QRCode.CorrectLevel.M });
+      // Draw onto our canvas
+      const img = tempDiv.querySelector('img') || tempDiv.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      if (img) {
+        // Wait a tick to ensure QR is rendered
+        setTimeout(()=>{ ctx.drawImage(img, 0, 0, canvas.width, canvas.height); }, 0);
+      }
+    }
+
+    // Logo file upload
+    el('logoFile').addEventListener('change', (e)=>{
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { el('pLogo').src = reader.result; };
+      reader.readAsDataURL(file);
+    });
+
+    // Download vCard
+    el('shareVcf').addEventListener('click', ()=>{
+      const blob = new Blob([buildVCard()], { type: 'text/vcard' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'contact.vcf';
+      a.click();
+    });
+
+    // Robust export using html2canvas + optional PDF
+    async function exportCard(format = 'png'){
+      const node = el('card');
+      // Ensure all external images are CORS-friendly
+      const canvas = await html2canvas(node, { backgroundColor: '#ffffff', scale: 2, useCORS: true, allowTaint: false });
+      const a = document.createElement('a');
+
+      if (format === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        // Fit image: keep aspect ratio
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+        const w = imgWidth * ratio;
+        const h = imgHeight * ratio;
+        const x = (pageWidth - w) / 2;
+        const y = (pageHeight - h) / 2;
+        pdf.addImage(imgData, 'JPEG', x, y, w, h);
+        pdf.save('business-card.pdf');
+        return;
+      }
+
+      let mime = 'image/png';
+      let filename = 'business-card.png';
+      if (format === 'jpeg') { mime = 'image/jpeg'; filename = 'business-card.jpg'; }
+      if (format === 'webp') { mime = 'image/webp'; filename = 'business-card.webp'; }
+
+      const dataUrl = canvas.toDataURL(mime, 0.95);
+      a.href = dataUrl;
+      a.download = filename;
+      a.click();
+    }
+
+    // New unified download handler
+    el('downloadCard').addEventListener('click', ()=>{
+      const fmt = el('imageFormat').value;
+      exportCard(fmt).catch(err => { console.error(err); alert('Export failed. Try another image or remove external logos.'); });
+    });
+
+    // Download QR as PNG
+    el('downloadQr').addEventListener('click', ()=>{
+      try {
+        const qrCanvas = el('qrCanvas');
+        const a = document.createElement('a');
+        a.href = qrCanvas.toDataURL('image/png');
+        a.download = 'business-card-qr.png';
+        a.click();
+      } catch (e) { console.error(e); alert('QR export failed'); }
+    });
+
+    // Print
+    el('printCard').addEventListener('click', ()=>{ window.print(); });
+
+    // Reactive inputs
+    ['fullName','jobTitle','company','phone','email','website','address','logoUrl','theme','bio','template'].forEach(id=>{
+      el(id).addEventListener('input', updatePreview);
+      el(id).addEventListener('change', updatePreview);
+    });
+
+    // Init
+    updatePreview();
+  </script>
+</body>
+</html>

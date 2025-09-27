@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stopwatch & Pomodoro — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { primary: '#063F5E', secondary: '#1a1a69', gray: '#6B7280' } } } } };
+  </script>
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    html{scroll-behavior:smooth}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-white text-slate-800">
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-100">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <a href="../index.html" class="flex items-center gap-2"><img src="../assets/logo.png" class="h-8" alt="logo"><span class="font-semibold" style="color:var(--brand-primary)">SimHireEstate</span></a>
+      <a href="../projects.html" class="text-sm hover:text-brand-secondary">Back to Projects</a>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <section class="bg-gradient-to-br from-brand-primary to-brand-secondary text-white">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 class="text-2xl font-bold">Stopwatch & Pomodoro</h1>
+        <p class="text-slate-100">Track time and stay focused with presets, sounds, and notifications.</p>
+      </div>
+    </section>
+
+    <section class="py-8">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-6">
+        <!-- Stopwatch -->
+        <div class="p-5 bg-white border border-slate-200 rounded-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold" style="color:var(--brand-primary)">Stopwatch</h2>
+            <div class="text-xs text-slate-500">Laps saved locally</div>
+          </div>
+          <div class="mt-3 text-4xl tabular-nums" id="swDisplay">00:00.000</div>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <button id="swStart" class="px-3 py-2 rounded-md text-white" style="background:var(--brand-secondary)">Start</button>
+            <button id="swLap" class="px-3 py-2 rounded-md border border-slate-200">Lap</button>
+            <button id="swReset" class="px-3 py-2 rounded-md border border-slate-200">Reset</button>
+            <button id="swExport" class="px-3 py-2 rounded-md border border-slate-200">Export Laps</button>
+          </div>
+          <ul id="swLaps" class="mt-4 space-y-1 text-sm text-slate-600 max-h-40 overflow-auto"></ul>
+        </div>
+
+        <!-- Pomodoro -->
+        <div class="p-5 bg-white border border-slate-200 rounded-lg">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold" style="color:var(--brand-primary)">Pomodoro</h2>
+            <span id="pomoState" class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">Ready</span>
+          </div>
+
+          <!-- Presets -->
+          <div class="mt-3 flex flex-wrap gap-2 text-xs">
+            <button class="preset px-2 py-1.5 border rounded" data-w="25" data-b="5" data-lb="15" data-every="4" style="border-color:#E5E7EB">25/5 (Long 15)</button>
+            <button class="preset px-2 py-1.5 border rounded" data-w="50" data-b="10" data-lb="20" data-every="3" style="border-color:#E5E7EB">50/10 (Long 20)</button>
+            <button class="preset px-2 py-1.5 border rounded" data-w="15" data-b="3" data-lb="8" data-every="4" style="border-color:#E5E7EB">15/3 (Long 8)</button>
+          </div>
+
+          <div class="mt-3 grid grid-cols-3 gap-3">
+            <label class="text-sm">Work (min)
+              <input id="pWork" type="number" min="1" class="mt-1 w-full border border-slate-200 rounded-md px-2 py-1" />
+            </label>
+            <label class="text-sm">Short Break (min)
+              <input id="pBreak" type="number" min="1" class="mt-1 w-full border border-slate-200 rounded-md px-2 py-1" />
+            </label>
+            <label class="text-sm">Cycles
+              <input id="pCycles" type="number" min="1" class="mt-1 w-full border border-slate-200 rounded-md px-2 py-1" />
+            </label>
+          </div>
+          <div class="mt-3 grid grid-cols-3 gap-3">
+            <label class="text-sm">Long Break (min)
+              <input id="pLong" type="number" min="1" class="mt-1 w-full border border-slate-200 rounded-md px-2 py-1" />
+            </label>
+            <label class="text-sm">Long Break Every
+              <input id="pEvery" type="number" min="2" class="mt-1 w-full border border-slate-200 rounded-md px-2 py-1" />
+            </label>
+            <label class="text-sm flex items-center gap-2">Auto Next
+              <input id="pAuto" type="checkbox" class="mt-1" />
+            </label>
+          </div>
+
+          <div class="mt-4 text-4xl tabular-nums" id="pDisplay">25:00</div>
+          <div class="mt-3 h-2 bg-slate-100 rounded-full">
+            <div id="pBar" class="h-2 bg-brand-secondary rounded-full" style="width:0%"></div>
+          </div>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <button id="pStart" class="px-3 py-2 rounded-md text-white" style="background:var(--brand-secondary)">Start</button>
+            <button id="pPause" class="px-3 py-2 rounded-md border border-slate-200">Pause</button>
+            <button id="pReset" class="px-3 py-2 rounded-md border border-slate-200">Reset</button>
+            <button id="pNotify" class="px-3 py-2 rounded-md border border-slate-200">Enable Notifications</button>
+            <label class="px-3 py-2 rounded-md border border-slate-200 flex items-center gap-2 text-sm">
+              <input type="checkbox" id="pSound" /> Sound
+            </label>
+          </div>
+          <div class="mt-3 text-sm text-slate-600">
+            Cycle: <span id="pCycle">0</span> / <span id="pCyclesTotal">0</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-100">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-slate-600 flex items-center justify-between">
+      <span>© <span id="year"></span> SimHireEstate</span>
+      <a class="hover:text-brand-secondary" href="../contact.html">Contact</a>
+    </div>
+  </footer>
+
+  <script>
+    // Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // --- Stopwatch ---
+    const SKEY_LAPS = 'stopwatch_laps_v1';
+    const swDisplay = document.getElementById('swDisplay');
+    const swLaps = document.getElementById('swLaps');
+    const swStart = document.getElementById('swStart');
+    const swLap = document.getElementById('swLap');
+    const swReset = document.getElementById('swReset');
+    const swExport = document.getElementById('swExport');
+    let swRunning = false, swT0 = 0, swRAF = 0, swElapsed = 0;
+
+    function fmt(ms){
+      const m = Math.floor(ms/60000);
+      const s = Math.floor((ms%60000)/1000);
+      const x = Math.floor(ms%1000);
+      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(x).padStart(3,'0')}`;
+    }
+    function tick(){ const now = performance.now(); const elapsed = swElapsed + (now - swT0); swDisplay.textContent = fmt(elapsed); swRAF = requestAnimationFrame(tick); }
+    function loadLaps(){ try{ return JSON.parse(localStorage.getItem(SKEY_LAPS)||'[]'); }catch{ return []; } }
+    function saveLaps(l){ localStorage.setItem(SKEY_LAPS, JSON.stringify(l)); }
+    function renderLaps(){ const l=loadLaps(); swLaps.innerHTML = l.map((t,i)=>`<li>[${i+1}] ${fmt(t)}</li>`).join(''); }
+
+    swStart.addEventListener('click', ()=>{
+      if(!swRunning){ swRunning = true; swT0 = performance.now(); swStart.textContent = 'Stop'; swRAF = requestAnimationFrame(tick); }
+      else { swRunning = false; cancelAnimationFrame(swRAF); swElapsed += performance.now()-swT0; swStart.textContent = 'Start'; }
+    });
+    swLap.addEventListener('click', ()=>{ const cur = swDisplay.textContent; const parts = cur.split(/[:.]/).map(Number); const ms = parts[0]*60000 + parts[1]*1000 + parts[2]; const l=loadLaps(); l.unshift(ms); saveLaps(l); renderLaps(); });
+    swReset.addEventListener('click', ()=>{ swRunning = false; cancelAnimationFrame(swRAF); swElapsed = 0; swDisplay.textContent = '00:00.000'; swStart.textContent = 'Start'; });
+    swExport.addEventListener('click', ()=>{ const l=loadLaps(); const csv=['Lap,Time']; l.forEach((ms,i)=> csv.push(`${i+1},${fmt(ms)}`)); const blob=new Blob([csv.join('\n')],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='laps.csv'; a.click(); });
+    renderLaps();
+
+    // --- Pomodoro ---
+    const SKEY = 'pomodoro_settings_v2';
+    const pWork = document.getElementById('pWork');
+    const pBreak = document.getElementById('pBreak');
+    const pCycles = document.getElementById('pCycles');
+    const pLong = document.getElementById('pLong');
+    const pEvery = document.getElementById('pEvery');
+    const pAuto = document.getElementById('pAuto');
+    const pState = document.getElementById('pomoState');
+    const pDisplay = document.getElementById('pDisplay');
+    const pBar = document.getElementById('pBar');
+    const pStart = document.getElementById('pStart');
+    const pPause = document.getElementById('pPause');
+    const pReset = document.getElementById('pReset');
+    const pCycleEl = document.getElementById('pCycle');
+    const pCyclesTotal = document.getElementById('pCyclesTotal');
+    const pNotify = document.getElementById('pNotify');
+    const pSound = document.getElementById('pSound');
+    document.querySelectorAll('.preset').forEach(b=> b.addEventListener('click', ()=>{
+      pWork.value=b.dataset.w; pBreak.value=b.dataset.b; pLong.value=b.dataset.lb; pEvery.value=b.dataset.every; saveSettings(); setMode('work', true);
+    }));
+
+    const saved = JSON.parse(localStorage.getItem(SKEY) || '{}');
+    pWork.value = saved.work ?? 25;
+    pBreak.value = saved.break ?? 5;
+    pCycles.value = saved.cycles ?? 4;
+    pLong.value = saved.long ?? 15;
+    pEvery.value = saved.every ?? 4;
+    pAuto.checked = saved.auto ?? false;
+
+    function saveSettings(){ localStorage.setItem(SKEY, JSON.stringify({ work:+pWork.value, break:+pBreak.value, cycles:+pCycles.value, long:+pLong.value, every:+pEvery.value, auto: !!pAuto.checked })); }
+    ;[pWork,pBreak,pCycles,pLong,pEvery,pAuto].forEach(i=> i.addEventListener('change', saveSettings));
+
+    let pTimer = null, pMode = 'work', pLeft = 0, pTotal = 0, pCycle = 0, paused = false, cyclesTotal = +pCycles.value;
+    pCyclesTotal.textContent = cyclesTotal;
+
+    function setMode(mode, resetCycle=false){
+      pMode = mode;
+      if(resetCycle){ pCycle = 0; }
+      pState.textContent = mode === 'work' ? 'Work' : (mode==='break' ? 'Break' : 'Long Break');
+      const mins = mode==='work' ? +pWork.value : (mode==='break' ? +pBreak.value : +pLong.value);
+      pLeft = Math.max(1, mins) * 60; pTotal = pLeft; renderP();
+    }
+    function renderP(){ const m = Math.floor(pLeft/60), s = pLeft%60; pDisplay.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; const progress = pTotal ? (1 - (pLeft/pTotal)) * 100 : 0; pBar.style.width = progress.toFixed(1)+'%'; pCycleEl.textContent = pCycle; pCyclesTotal.textContent = +pCycles.value; }
+
+    function step(){
+      if(paused) return;
+      if(pLeft>0){ pLeft--; renderP(); return; }
+      // timer hit 0
+      notify(`Time's up: ${pMode==='work'?'Work':'Break'} complete`);
+      beep();
+      if(pMode==='work'){
+        pCycle++;
+        if(pCycle % Math.max(2, +pEvery.value) === 0){ setMode('long'); } else { setMode('break'); }
+      } else {
+        if(pCycle >= +pCycles.value){ // finished all
+          clearInterval(pTimer); pTimer=null; pState.textContent='Done'; if(pAuto.checked){ setTimeout(()=>{ pCycle=0; setMode('work'); }, 800); } return;
+        }
+        setMode('work');
+      }
+      if(pAuto.checked){ paused=false; } else { paused=true; }
+    }
+
+    setMode('work', true);
+    pStart.addEventListener('click', ()=>{ if(pTimer) return; paused=false; pTimer=setInterval(step, 1000); });
+    pPause.addEventListener('click', ()=>{ paused=!paused; pState.textContent = paused ? 'Paused' : (pMode==='work'?'Work':(pMode==='break'?'Break':'Long Break')); });
+    pReset.addEventListener('click', ()=>{ clearInterval(pTimer); pTimer=null; pCycle=0; paused=false; setMode('work', true); });
+
+    // Sound & Notifications
+    function beep(){ if(!pSound.checked) return; try{ const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.type='sine'; o.frequency.value=880; g.gain.setValueAtTime(0.0001, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime+0.02); o.start(); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.2); setTimeout(()=>{ o.stop(); ctx.close(); }, 250); }, 200); }catch(e){} }
+    function notify(text){ if(Notification.permission==='granted'){ new Notification('Pomodoro', { body:text }); } }
+    document.getElementById('pNotify').addEventListener('click', async ()=>{ try{ if(Notification.permission!=='granted'){ await Notification.requestPermission(); } alert('Notification permission: '+Notification.permission); }catch(e){ alert('Notifications not supported in this browser.'); } });
+  </script>
+</body>
+</html>

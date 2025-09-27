@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — To-Do & Task Manager</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    *{ box-sizing: border-box; }
+    body { margin:0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background:#f8fafc; color:#0f172a; }
+    header{ position:sticky; top:0; z-index:10; background:#fff; border-bottom:1px solid #e5e7eb; }
+    .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .brand span{ color:var(--brand-primary); font-weight:600; }
+    .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; }
+    .grid{ display:grid; gap:16px; }
+    @media(min-width:768px){ .grid-2{ grid-template-columns:1fr 1fr; } }
+
+    h1{ font-size:1.5rem; margin:12px 0 4px; color:#0f172a; }
+    h2{ font-size:1.1rem; margin:0 0 8px; color:#0f172a; }
+    label{ font-size:.9rem; color:#334155; }
+
+    input, select, textarea, button{ font:inherit; }
+    input, select, textarea{ width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; }
+    input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--brand-secondary); }
+    textarea{ min-height:72px; resize:vertical; }
+
+    .btn{ padding:10px 14px; border-radius:8px; border:1px solid transparent; cursor:pointer; }
+    .btn-primary{ background:var(--brand-secondary); color:#fff; }
+    .btn-ghost{ background:#fff; border-color:#e5e7eb; }
+    .btn-danger{ background:#ef4444; color:#fff; }
+
+    .muted{ color:#64748b; font-size:.9rem; }
+
+    .summary{ display:grid; gap:12px; }
+    @media(min-width:640px){ .summary{ grid-template-columns: repeat(4,1fr); } }
+    .kpi{ border-left:4px solid var(--brand-primary); padding-left:12px; }
+    .kpi .value{ font-size:1.3rem; font-weight:700; margin-top:4px; }
+
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ text-align:left; padding:10px; border-bottom:1px solid #e5e7eb; font-size:.95rem; }
+    th{ color:#334155; font-weight:600; }
+    tr:hover td{ background:#f9fafb; }
+
+    .badge{ padding:2px 8px; border-radius:999px; font-size:.75rem; border:1px solid #e5e7eb; background:#f8fafc; color:#334155; }
+    .priority-low{ color:#065f46; border-color:#d1fae5; background:#ecfdf5; }
+    .priority-medium{ color:#92400e; border-color:#fde68a; background:#fffbeb; }
+    .priority-high{ color:#991b1b; border-color:#fecaca; background:#fef2f2; }
+    .status-todo{ background:#eef2ff; border-color:#c7d2fe; color:#3730a3; }
+    .status-inprogress{ background:#e0f2fe; border-color:#bae6fd; color:#075985; }
+    .status-done{ background:#ecfdf5; border-color:#d1fae5; color:#065f46; }
+
+    .row-actions{ display:flex; gap:8px; }
+    .controls{ display:flex; gap:8px; flex-wrap:wrap; }
+
+    .overdue{ color:#b91c1c; font-weight:600; }
+
+    .charts { display:grid; gap:16px; }
+    @media(min-width:768px){ .charts { grid-template-columns: repeat(3, 1fr); } }
+
+    /* Print styles */
+    @media print {
+      header, .controls { display:none !important; }
+      body { background:#fff; }
+      .card { border:none; padding:0; }
+      .wrap { max-width:100%; padding:0 12px; }
+      th, td { padding:6px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; height:64px;">
+      <a href="../projects.html" class="brand" title="Back to Projects">
+        <img src="../assets/logo.png" alt="SimHireEstate" style="height:28px; width:auto" />
+        <span>SimHireEstate</span>
+      </a>
+      <div class="muted">To-Do & Task Manager</div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding-top:18px; padding-bottom:28px;">
+    <section class="summary">
+      <div class="card kpi">
+        <div class="muted">Total</div>
+        <div id="kpiTotal" class="value">0</div>
+      </div>
+      <div class="card kpi">
+        <div class="muted">Open</div>
+        <div id="kpiOpen" class="value">0</div>
+      </div>
+      <div class="card kpi">
+        <div class="muted">In Progress</div>
+        <div id="kpiInProgress" class="value">0</div>
+      </div>
+      <div class="card kpi">
+        <div class="muted">Done</div>
+        <div id="kpiDone" class="value">0</div>
+      </div>
+    </section>
+
+    <section class="grid grid-2" style="margin-top:16px;">
+      <div class="card">
+        <h2>Add Task</h2>
+        <div class="grid grid-2">
+          <div style="grid-column:1/-1;">
+            <label for="title">Title</label>
+            <input id="title" type="text" placeholder="What needs to be done?" />
+          </div>
+          <div>
+            <label for="project">Project</label>
+            <select id="project"></select>
+          </div>
+          <div>
+            <label for="newProject">New Project (optional)</label>
+            <input id="newProject" type="text" placeholder="Add and auto-select" />
+          </div>
+          <div>
+            <label for="priority">Priority</label>
+            <select id="priority">
+              <option>Low</option>
+              <option selected>Medium</option>
+              <option>High</option>
+            </select>
+          </div>
+          <div>
+            <label for="due">Due date</label>
+            <input id="due" type="date" />
+          </div>
+          <div>
+            <label for="assignee">Assignee</label>
+            <input id="assignee" type="text" placeholder="Who is responsible?" />
+          </div>
+          <div>
+            <label for="estimate">Estimate (hours)</label>
+            <input id="estimate" type="number" min="0" step="0.5" placeholder="e.g. 2" />
+          </div>
+          <div>
+            <label for="status">Status</label>
+            <select id="status">
+              <option>Todo</option>
+              <option>In Progress</option>
+              <option>Done</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1;">
+            <label for="tags">Tags</label>
+            <input id="tags" type="text" placeholder="e.g. urgent, client" />
+          </div>
+          <div style="grid-column:1/-1;">
+            <label for="notes">Notes</label>
+            <textarea id="notes" placeholder="Optional details..."></textarea>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+          <button class="btn btn-primary" id="addBtn">Add</button>
+          <button class="btn btn-ghost" id="resetBtn">Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Filters & Data</h2>
+        <div class="grid grid-2">
+          <div>
+            <label for="fProject">Project</label>
+            <select id="fProject"></select>
+          </div>
+          <div>
+            <label for="fStatus">Status</label>
+            <select id="fStatus">
+              <option value="all">All</option>
+              <option>Todo</option>
+              <option>In Progress</option>
+              <option>Done</option>
+            </select>
+          </div>
+          <div>
+            <label for="fPriority">Priority</label>
+            <select id="fPriority">
+              <option value="all">All</option>
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+            </select>
+          </div>
+          <div>
+            <label for="fMonth">Month</label>
+            <input id="fMonth" type="month" />
+          </div>
+          <div style="grid-column:1/-1;">
+            <label for="fAssignee">Assignee</label>
+            <input id="fAssignee" type="text" placeholder="Filter by assignee" />
+          </div>
+          <div style="grid-column:1/-1;">
+            <label for="search">Search</label>
+            <input id="search" type="text" placeholder="Title, notes or tags contains..." />
+          </div>
+        </div>
+        <div class="controls" style="margin-top:12px;">
+          <button class="btn btn-ghost" id="exportBtn">Export JSON</button>
+          <label class="btn btn-ghost" for="importInput" style="cursor:pointer;">Import JSON</label>
+          <input id="importInput" type="file" accept="application/json" style="display:none" />
+          <button class="btn btn-ghost" id="printBtn">Print</button>
+          <button class="btn btn-danger" id="clearBtn">Clear All</button>
+        </div>
+        <p class="muted">Data is stored locally in your browser (no backend).</p>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <h2>Charts</h2>
+      <div class="charts">
+        <div><canvas id="chartStatus"></canvas></div>
+        <div><canvas id="chartPriority"></canvas></div>
+        <div><canvas id="chartProject"></canvas></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <h2>Tasks</h2>
+        <div class="muted" id="listCount">0 items</div>
+      </div>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Project</th>
+              <th>Assignee</th>
+              <th>Priority</th>
+              <th>Estimate</th>
+              <th>Due</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const tasksKey = 'tasksV2'; // bump for new fields
+    const projectsKey = 'taskProjectsV1';
+
+    // Elements for form
+    const titleEl = document.getElementById('title');
+    const projectEl = document.getElementById('project');
+    const newProjectEl = document.getElementById('newProject');
+    const priorityEl = document.getElementById('priority');
+    const dueEl = document.getElementById('due');
+    const assigneeEl = document.getElementById('assignee');
+    const estimateEl = document.getElementById('estimate');
+    const statusEl = document.getElementById('status');
+    const tagsEl = document.getElementById('tags');
+    const notesEl = document.getElementById('notes');
+    const addBtn = document.getElementById('addBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // Filters
+    const fProjectEl = document.getElementById('fProject');
+    const fStatusEl = document.getElementById('fStatus');
+    const fPriorityEl = document.getElementById('fPriority');
+    const fMonthEl = document.getElementById('fMonth');
+    const fAssigneeEl = document.getElementById('fAssignee');
+    const searchEl = document.getElementById('search');
+
+    // KPIs
+    const kpiTotal = document.getElementById('kpiTotal');
+    const kpiOpen = document.getElementById('kpiOpen');
+    const kpiInProgress = document.getElementById('kpiInProgress');
+    const kpiDone = document.getElementById('kpiDone');
+
+    // Table
+    const tbody = document.getElementById('tbody');
+    const listCount = document.getElementById('listCount');
+
+    // Charts
+    let chartStatus = null, chartPriority = null, chartProject = null;
+
+    // State
+    let tasks = migrate(load(tasksKey) || []);
+    let projects = load(projectsKey) || ['General'];
+    let editingId = null;
+
+    function load(key){ try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+    function save(){ localStorage.setItem(tasksKey, JSON.stringify(tasks)); localStorage.setItem(projectsKey, JSON.stringify(projects)); }
+
+    function uid(){ return Math.random().toString(36).slice(2,10); }
+    function todayISO(){ const d=new Date(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${d.getFullYear()}-${m}-${day}`; }
+
+    function migrate(list){
+      // map from old V1 tasks without new fields
+      return list.map(t => ({
+        assignee: '', estimate: 0, tags: '', ...t
+      }));
+    }
+
+    // Init selects
+    function refreshProjectsSelect(){
+      const opts = projects.map(p=>`<option>${escapeHtml(p)}</option>`).join('');
+      projectEl.innerHTML = opts;
+      fProjectEl.innerHTML = `<option value="all">All</option>` + opts;
+    }
+
+    function ensureNewProject(){
+      const name = newProjectEl.value.trim();
+      if (!name) return null;
+      if (!projects.includes(name)) projects.push(name);
+      newProjectEl.value = '';
+      return name;
+    }
+
+    function clearForm(){
+      titleEl.value = '';
+      priorityEl.value = 'Medium';
+      dueEl.value = todayISO();
+      assigneeEl.value = '';
+      estimateEl.value = '';
+      statusEl.value = 'Todo';
+      tagsEl.value = '';
+      notesEl.value = '';
+      editingId = null;
+      addBtn.textContent = 'Add';
+      refreshProjectsSelect();
+    }
+
+    function getFilteredRows(){
+      const fp = fProjectEl.value;
+      const fs = fStatusEl.value;
+      const fr = fPriorityEl.value;
+      const fm = fMonthEl.value; // YYYY-MM
+      const fa = (fAssigneeEl.value||'').toLowerCase();
+      const q = (searchEl.value||'').toLowerCase();
+
+      return tasks.filter(t=>{
+        if (fp && fp!=='all' && t.project!==fp) return false;
+        if (fs && fs!=='all' && t.status!==fs) return false;
+        if (fr && fr!=='all' && t.priority!==fr) return false;
+        if (fm && t.due && !t.due.startsWith(fm)) return false;
+        if (fa && !(t.assignee||'').toLowerCase().includes(fa)) return false;
+        if (q && !(`${t.title} ${t.notes||''} ${t.tags||''}`.toLowerCase().includes(q))) return false;
+        return true;
+      });
+    }
+
+    function render(){
+      // KPIs
+      kpiTotal.textContent = tasks.length;
+      kpiOpen.textContent = tasks.filter(t=>t.status==='Todo').length;
+      kpiInProgress.textContent = tasks.filter(t=>t.status==='In Progress').length;
+      kpiDone.textContent = tasks.filter(t=>t.status==='Done').length;
+
+      const rows = getFilteredRows();
+
+      tbody.innerHTML = rows.map(t=>{
+        const over = isOverdue(t) ? 'overdue' : '';
+        const est = Number(t.estimate||0);
+        return `
+          <tr>
+            <td>${escapeHtml(t.title)}</td>
+            <td>${escapeHtml(t.project)}</td>
+            <td>${escapeHtml(t.assignee||'')}</td>
+            <td><span class="badge ${priorityClass(t.priority)}">${t.priority}</span></td>
+            <td>${est ? est + 'h' : ''}</td>
+            <td class="${over}">${t.due||''}</td>
+            <td><span class="badge ${statusClass(t.status)}">${t.status}</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="btn btn-ghost" onclick="onEdit('${t.id}')">Edit</button>
+                <button class="btn btn-ghost" onclick="onAdvance('${t.id}')">Next</button>
+                <button class="btn btn-danger" onclick="onDelete('${t.id}')">Delete</button>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+
+      listCount.textContent = `${rows.length} item${rows.length===1?'':'s'}`;
+
+      updateCharts(rows);
+    }
+
+    function isOverdue(t){ if (!t.due) return false; if (t.status==='Done') return false; const today = todayISO(); return t.due < today; }
+    function priorityClass(p){ if (p==='High') return 'priority-high'; if (p==='Low') return 'priority-low'; return 'priority-medium'; }
+    function statusClass(s){ if (s==='Done') return 'status-done'; if (s==='In Progress') return 'status-inprogress'; return 'status-todo'; }
+
+    function onAddOrUpdate(){
+      const t = titleEl.value.trim();
+      if (!t){ alert('Title is required.'); return; }
+      const proj = ensureNewProject() || projectEl.value || 'General';
+      const task = {
+        id: editingId || uid(),
+        title: t,
+        project: proj,
+        assignee: assigneeEl.value.trim(),
+        estimate: Number(estimateEl.value||0),
+        priority: priorityEl.value,
+        due: dueEl.value || '',
+        status: statusEl.value,
+        tags: tagsEl.value.trim(),
+        notes: notesEl.value.trim()
+      };
+      if (editingId){
+        const i = tasks.findIndex(x=>x.id===editingId);
+        if (i!==-1) tasks[i] = task;
+      } else {
+        tasks.unshift(task);
+      }
+      save();
+      editingId = null; addBtn.textContent='Add';
+      clearForm(); refreshProjectsSelect(); projectEl.value = proj; // keep selected
+      render();
+    }
+
+    function onEdit(id){
+      const t = tasks.find(x=>x.id===id); if (!t) return;
+      titleEl.value = t.title;
+      refreshProjectsSelect(); projectEl.value = t.project;
+      assigneeEl.value = t.assignee||'';
+      estimateEl.value = t.estimate||'';
+      priorityEl.value = t.priority;
+      dueEl.value = t.due || '';
+      statusEl.value = t.status;
+      tagsEl.value = t.tags || '';
+      notesEl.value = t.notes || '';
+      editingId = id; addBtn.textContent='Update';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function onAdvance(id){
+      const order = ['Todo','In Progress','Done'];
+      const t = tasks.find(x=>x.id===id); if (!t) return;
+      const idx = order.indexOf(t.status);
+      t.status = order[(idx+1) % order.length];
+      save(); render();
+    }
+
+    function onDelete(id){ if (!confirm('Delete this task?')) return; tasks = tasks.filter(x=>x.id!==id); save(); render(); }
+
+    // Export/Import JSON (include new fields)
+    function exportJson(){
+      const data = { tasks, projects };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'tasks_export.json'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    function importJson(file){
+      const r = new FileReader();
+      r.onload = () => {
+        try{
+          const obj = JSON.parse(String(r.result||'{}'));
+          if (Array.isArray(obj.projects)) {
+            for (const p of obj.projects) if (!projects.includes(p)) projects.push(p);
+          }
+          if (Array.isArray(obj.tasks)) {
+            const map = new Map(tasks.map(t=>[t.id,t]));
+            for (const t of obj.tasks){
+              const id = t.id || uid();
+              map.set(id, { assignee:'', estimate:0, tags:'', ...t, id });
+            }
+            tasks = Array.from(map.values());
+          }
+          save(); refreshProjectsSelect(); render();
+        } catch(e){ alert('Invalid JSON'); }
+      };
+      r.readAsText(file);
+    }
+
+    function clearAll(){ if (!confirm('This will delete ALL tasks and projects. Continue?')) return; tasks = []; projects = ['General']; save(); refreshProjectsSelect(); render(); }
+
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+    // Charts
+    function updateCharts(rows){
+      // Status distribution
+      const byStatus = countBy(rows, t=>t.status);
+      const sLabels = Object.keys(byStatus); const sValues = Object.values(byStatus);
+      const ctxS = document.getElementById('chartStatus').getContext('2d');
+      if (!chartStatus){
+        chartStatus = new Chart(ctxS, { type:'doughnut', data:{ labels:sLabels, datasets:[{ data:sValues, backgroundColor:['#3730a3','#075985','#065f46'] }] }, options:{ plugins:{ legend:{ position:'bottom' } } } });
+      } else { chartStatus.data.labels = sLabels; chartStatus.data.datasets[0].data = sValues; chartStatus.update(); }
+
+      // Priority distribution
+      const byPriority = countBy(rows, t=>t.priority);
+      const pLabels = Object.keys(byPriority); const pValues = Object.values(byPriority);
+      const ctxP = document.getElementById('chartPriority').getContext('2d');
+      if (!chartPriority){
+        chartPriority = new Chart(ctxP, { type:'bar', data:{ labels:pLabels, datasets:[{ label:'Tasks by Priority', data:pValues, backgroundColor:'#1d4ed8' }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } } });
+      } else { chartPriority.data.labels = pLabels; chartPriority.data.datasets[0].data = pValues; chartPriority.update(); }
+
+      // Tasks per project
+      const byProject = countBy(rows, t=>t.project);
+      const prLabels = Object.keys(byProject); const prValues = Object.values(byProject);
+      const ctxPr = document.getElementById('chartProject').getContext('2d');
+      if (!chartProject){
+        chartProject = new Chart(ctxPr, { type:'bar', data:{ labels:prLabels, datasets:[{ label:'Tasks by Project', data:prValues, backgroundColor:'#16a34a' }] }, options:{ plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } } });
+      } else { chartProject.data.labels = prLabels; chartProject.data.datasets[0].data = prValues; chartProject.update(); }
+    }
+
+    function countBy(list, fn){ const m=new Map(); for(const x of list){ const k = fn(x); m.set(k, (m.get(k)||0)+1); } return Object.fromEntries(m); }
+
+    // Events
+    addBtn.addEventListener('click', onAddOrUpdate);
+    resetBtn.addEventListener('click', clearForm);
+
+    [fProjectEl, fStatusEl, fPriorityEl].forEach(el=> el.addEventListener('change', render));
+    fMonthEl.addEventListener('change', render);
+    fAssigneeEl.addEventListener('input', render);
+    searchEl.addEventListener('input', render);
+
+    document.getElementById('exportBtn').addEventListener('click', exportJson);
+    document.getElementById('importInput').addEventListener('change', (e)=>{ const f = e.target.files?.[0]; if (f) importJson(f); e.target.value=''; });
+    document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+    document.getElementById('clearBtn').addEventListener('click', clearAll);
+
+    // Init
+    refreshProjectsSelect();
+    // Defaults
+    dueEl.value = todayISO();
+    const d = new Date(); const m = String(d.getMonth()+1).padStart(2,'0'); fMonthEl.value = `${d.getFullYear()}-${m}`;
+    render();
+  </script>
+</body>
+</html>

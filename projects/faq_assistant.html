@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — FAQ Assistant</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    *{ box-sizing: border-box; }
+    body{ margin:0; font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background:#f8fafc; color:#0f172a; }
+    header{ position:sticky; top:0; z-index:10; background:#fff; border-bottom:1px solid #e5e7eb; }
+    .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .brand span{ color:var(--brand-primary); font-weight:600; }
+    .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; }
+
+    h1{ font-size:1.5rem; margin:12px 0 4px; color:#0f172a; }
+    h2{ font-size:1.1rem; margin:0 0 8px; color:#0f172a; }
+    label{ font-size:.9rem; color:#334155; }
+
+    input, button{ font:inherit; }
+    input{ width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; }
+    input:focus{ outline:none; border-color:var(--brand-secondary); }
+
+    .btn{ padding:10px 14px; border-radius:8px; border:1px solid transparent; cursor:pointer; }
+    .btn-primary{ background:var(--brand-secondary); color:#fff; }
+    .btn-ghost{ background:#fff; border-color:#e5e7eb; }
+
+    .muted{ color:#64748b; font-size:.9rem; }
+
+    .qa{ display:flex; gap:10px; align-items:flex-start; }
+    .bubble{ background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; }
+    .agent{ border-left:4px solid var(--brand-primary); }
+    .user{ border-left:4px solid var(--brand-secondary); }
+
+    .list{ display:grid; gap:10px; max-height:50vh; overflow:auto; }
+
+    @media print{ header { display:none !important; } body{ background:#fff; } .card{ border:none; padding:0; } .wrap{ max-width:100%; padding:0 12px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; height:64px;">
+      <a href="../projects.html" class="brand" title="Back to Projects">
+        <img src="../assets/logo.png" alt="SimHireEstate" style="height:28px; width:auto" />
+        <span>SimHireEstate</span>
+      </a>
+      <div class="muted">FAQ Assistant</div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding-top:18px; padding-bottom:28px;">
+    <section class="card">
+      <h2>Ask a question</h2>
+      <div style="display:grid; gap:10px;">
+        <input id="question" type="text" placeholder="Type your question... e.g., What services do you offer?" />
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary" id="askBtn">Ask</button>
+          <button class="btn btn-ghost" id="clearBtn">Clear</button>
+          <button class="btn btn-ghost" id="printBtn">Print</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <h2>Answers</h2>
+      <div id="answers" class="list"></div>
+      <p class="muted" style="margin-top:8px;">This is a smart, offline assistant with predefined patterns. No backend or AI API needed.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <h2>Quick Topics</h2>
+      <div id="topics" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+    </section>
+  </main>
+
+  <script>
+    const ANSWER_BANK = [
+      {
+        patterns: [/\bservice(s)?\b/i, /what.*offer/i],
+        answer: `We offer workforce solutions, business services, property listings, community programs, tech tools, and finance guidance. Explore the Hubs via the top navigation.`
+      },
+      {
+        patterns: [/\bprice(s)?\b/i, /\bpricing\b/i, /how much/i],
+        answer: `Visit the Pricing and Packages pages for transparent plans. We also customize based on your needs—contact us for a tailored quote.`
+      },
+      {
+        patterns: [/\bcontact\b/i, /reach.*you/i, /email/i, /phone/i, /whatsapp/i],
+        answer: `You can reach us via email at simhireestate@gmail.com or WhatsApp at +250 793 122 136. See the Contact page for more.`
+      },
+      {
+        patterns: [/\bjob\b/i, /workforce/i, /hire/i, /cv|resume/i],
+        answer: `For job seekers and employers, check the Workforce hub. Create or upload resumes, and explore our Resume Builder tool in Projects.`
+      },
+      {
+        patterns: [/\bproperty\b/i, /rent|buy|sell/i],
+        answer: `Visit the Property hub for listings and assistance. We connect seekers with suitable properties and verify key details.`
+      },
+      {
+        patterns: [/\bfinance\b/i, /budget|expense/i],
+        answer: `Use the Budget & Expense Tracker in Projects to manage income, expenses, and CSV export/import—fully offline.`
+      },
+      {
+        patterns: [/\btech\b/i, /tool(s)?/i, /project(s)?/i],
+        answer: `See the Projects page for tools like Image Editor, Currency Converter, Unit Converter, Resume Builder, and more.`
+      },
+      {
+        patterns: [/\broadmap\b/i, /vision\b/i],
+        answer: `Our Vision and Roadmap pages outline current focus areas and upcoming milestones across all hubs.`
+      },
+    ];
+
+    const QUICK_TOPICS = [
+      'Pricing', 'Contact', 'Workforce', 'Property', 'Finance', 'Tech Tools', 'Roadmap', 'Packages'
+    ];
+
+    const answers = document.getElementById('answers');
+
+    document.getElementById('askBtn').addEventListener('click', ask);
+    document.getElementById('clearBtn').addEventListener('click', ()=> answers.innerHTML='');
+    document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+    const topics = document.getElementById('topics');
+    QUICK_TOPICS.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-ghost';
+      btn.textContent = t;
+      btn.addEventListener('click', () => { document.getElementById('question').value = t; ask(); });
+      topics.appendChild(btn);
+    });
+
+    function ask(){
+      const qEl = document.getElementById('question');
+      const q = (qEl.value||'').trim();
+      if (!q) return;
+      addBubble('user', q);
+      const a = answerFor(q) || fallback();
+      addBubble('agent', a);
+      qEl.value = '';
+    }
+
+    function addBubble(type, text){
+      const row = document.createElement('div'); row.className = 'qa';
+      const b = document.createElement('div'); b.className = `bubble ${type}`; b.textContent = text;
+      row.appendChild(b); answers.appendChild(row); answers.scrollTop = answers.scrollHeight;
+    }
+
+    function answerFor(q){
+      for (const item of ANSWER_BANK){
+        if (item.patterns.some(re => re.test(q))) return item.answer;
+      }
+      return null;
+    }
+
+    function fallback(){
+      return 'Thanks for your question! Please check our Projects, Pricing, and Contact pages for more details.';
+    }
+  </script>
+</body>
+</html>

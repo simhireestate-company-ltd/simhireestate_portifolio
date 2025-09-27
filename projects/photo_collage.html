@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Photo Collage Maker — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:{primary:'#063F5E',secondary:'#1a1a69'}}}}}</script>
+  <style>
+    :root{--brand-primary:#063F5E;--brand-secondary:#1a1a69}
+    .thumb{ aspect-ratio:1/1; object-fit:cover }
+    .drop{ border:2px dashed #e5e7eb }
+    .drop.drop-active{ border-color:#1a1a69; background:#f8fafc }
+  </style>
+</head>
+<body class="min-h-screen bg-white text-slate-800">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold" style="color:var(--brand-primary)">Online Photo Collage Maker</h1>
+      <a href="../projects.html" class="text-sm text-white px-3 py-2 rounded" style="background:var(--brand-secondary)">Back</a>
+    </header>
+
+    <section class="p-4 border rounded-lg bg-white">
+      <div class="grid lg:grid-cols-3 gap-5">
+        <div class="lg:col-span-2 space-y-4">
+          <div id="drop" class="drop rounded-lg p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div class="text-sm text-slate-600">Drag & drop images here or select files</div>
+            <div class="flex items-center gap-2">
+              <input id="files" type="file" accept="image/*" multiple class="hidden" />
+              <button id="pick" class="px-3 py-2 text-white rounded" style="background:var(--brand-secondary)">Choose Images</button>
+              <button id="shuffle" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Shuffle</button>
+              <button id="clear" class="px-3 py-2 border rounded text-red-600 border-red-200">Clear</button>
+            </div>
+          </div>
+
+          <div id="thumbs" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-2"></div>
+
+          <div class="grid sm:grid-cols-2 gap-4">
+            <label class="text-sm">Layout Preset
+              <select id="layout" class="mt-1 w-full border rounded px-3 py-2">
+                <option value="2x2">Grid 2x2</option>
+                <option value="3x3">Grid 3x3</option>
+                <option value="row">Single Row</option>
+                <option value="col">Single Column</option>
+                <option value="custom">Custom Grid</option>
+              </select>
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-sm">Rows<input id="rows" type="number" class="mt-1 w-full border rounded px-3 py-2" value="2" min="1" max="10" /></label>
+              <label class="text-sm">Cols<input id="cols" type="number" class="mt-1 w-full border rounded px-3 py-2" value="2" min="1" max="10" /></label>
+            </div>
+            <label class="text-sm">Canvas Size
+              <select id="size" class="mt-1 w-full border rounded px-3 py-2">
+                <option value="1080x1080">Square 1080×1080</option>
+                <option value="1920x1080">Landscape 1920×1080</option>
+                <option value="1200x1600">Portrait 1200×1600</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-sm">Width<input id="cw" type="number" class="mt-1 w-full border rounded px-3 py-2" placeholder="e.g., 1600" /></label>
+              <label class="text-sm">Height<input id="ch" type="number" class="mt-1 w-full border rounded px-3 py-2" placeholder="e.g., 1200" /></label>
+            </div>
+            <label class="text-sm">Fit Mode
+              <select id="fit" class="mt-1 w-full border rounded px-3 py-2">
+                <option value="contain">Contain (no crop)</option>
+                <option value="cover">Cover (crop)</option>
+              </select>
+            </label>
+            <div class="grid grid-cols-3 gap-3 items-end">
+              <label class="text-sm">Gap <span id="gapVal" class="text-slate-500">10px</span>
+                <input id="gap" type="range" class="mt-1 w-full" min="0" max="40" step="1" value="10" />
+              </label>
+              <label class="text-sm">Radius <span id="radVal" class="text-slate-500">6px</span>
+                <input id="radius" type="range" class="mt-1 w-full" min="0" max="30" step="1" value="6" />
+              </label>
+              <label class="text-sm">Background
+                <input id="bg" type="color" class="mt-1 w-full border rounded px-2 py-1" value="#ffffff" />
+              </label>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <label class="text-sm">Export Format
+                <select id="fmt" class="mt-1 w-full border rounded px-3 py-2">
+                  <option value="image/jpeg">JPEG (.jpg)</option>
+                  <option value="image/webp">WebP (.webp)</option>
+                  <option value="image/png">PNG (.png)</option>
+                </select>
+              </label>
+              <label class="text-sm">Quality <span id="qVal" class="text-slate-500">92%</span>
+                <input id="quality" type="range" min="50" max="100" step="1" value="92" class="mt-1 w-full" />
+              </label>
+            </div>
+            <div class="sm:col-span-2 flex gap-3">
+              <button id="build" class="px-4 py-2 text-white rounded" style="background:var(--brand-secondary)">Build</button>
+              <button id="export" class="px-4 py-2 border rounded" style="border-color:#E5E7EB">Export</button>
+            </div>
+          </div>
+        </div>
+
+        <aside>
+          <canvas id="canvas" class="w-full border rounded bg-white" height="600"></canvas>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const files = $('#files');
+    const pick = $('#pick');
+    const drop = $('#drop');
+    const thumbs = $('#thumbs');
+    const layout = $('#layout');
+    const rows = $('#rows');
+    const cols = $('#cols');
+    const sizeSel = $('#size');
+    const cw = $('#cw');
+    const ch = $('#ch');
+    const fit = $('#fit');
+    const gap = $('#gap');
+    const gapVal = $('#gapVal');
+    const radius = $('#radius');
+    const radVal = $('#radVal');
+    const bg = $('#bg');
+    const fmt = $('#fmt');
+    const quality = $('#quality');
+    const qVal = $('#qVal');
+    const buildBtn = $('#build');
+    const exportBtn = $('#export');
+    const shuffleBtn = $('#shuffle');
+    const clearBtn = $('#clear');
+
+    const canvas = $('#canvas');
+    const ctx = canvas.getContext('2d');
+
+    let items = []; // {src: dataURL, img: Image}
+
+    function updateThumbs(){
+      if(items.length===0){ thumbs.innerHTML = '<div class="col-span-full text-center text-slate-500 text-sm">No images yet</div>'; return; }
+      thumbs.innerHTML = items.map((it, i)=>`
+        <div class="relative group">
+          <img src="${it.src}" class="thumb w-full rounded border" alt="thumb" />
+          <div class="absolute inset-x-1 bottom-1 flex justify-between gap-1 opacity-0 group-hover:opacity-100 transition">
+            <button data-i="${i}" class="up px-1.5 py-0.5 text-xs rounded bg-white/90 border">↑</button>
+            <button data-i="${i}" class="down px-1.5 py-0.5 text-xs rounded bg-white/90 border">↓</button>
+            <button data-i="${i}" class="del px-1.5 py-0.5 text-xs rounded bg-white/90 border text-red-600">✕</button>
+          </div>
+        </div>
+      `).join('');
+      thumbs.querySelectorAll('.up').forEach(b=>b.addEventListener('click', e=>{ const i=+e.currentTarget.dataset.i; if(i>0){ [items[i-1],items[i]]=[items[i],items[i-1]]; updateThumbs(); build(); } }));
+      thumbs.querySelectorAll('.down').forEach(b=>b.addEventListener('click', e=>{ const i=+e.currentTarget.dataset.i; if(i<items.length-1){ [items[i+1],items[i]]=[items[i],items[i+1]]; updateThumbs(); build(); } }));
+      thumbs.querySelectorAll('.del').forEach(b=>b.addEventListener('click', e=>{ const i=+e.currentTarget.dataset.i; items.splice(i,1); updateThumbs(); build(); }));
+    }
+
+    function setCanvasSize(){
+      let w, h;
+      const v = sizeSel.value;
+      if(v==='1080x1080'){ w=1080; h=1080; }
+      else if(v==='1920x1080'){ w=1920; h=1080; }
+      else if(v==='1200x1600'){ w=1200; h=1600; }
+      else { // custom
+        w = parseInt(cw.value||0,10) || 1600;
+        h = parseInt(ch.value||0,10) || 1200;
+      }
+      canvas.width = w; canvas.height = h;
+    }
+
+    function drawRoundedImage(image, x, y, w, h, r){
+      if(r>0){
+        ctx.save();
+        ctx.beginPath();
+        const rr = Math.min(r, w/2, h/2);
+        ctx.moveTo(x+rr, y);
+        ctx.arcTo(x+w, y, x+w, y+h, rr);
+        ctx.arcTo(x+w, y+h, x, y+h, rr);
+        ctx.arcTo(x, y+h, x, y, rr);
+        ctx.arcTo(x, y, x+w, y, rr);
+        ctx.closePath();
+        ctx.clip();
+      }
+      ctx.drawImage(image, x, y, w, h);
+      if(r>0){ ctx.restore(); }
+    }
+
+    function drawCell(img, rect, mode){
+      const {x,y,w,h} = rect;
+      if(mode==='contain'){
+        const ratio = Math.min(w/img.width, h/img.height);
+        const nw = img.width*ratio, nh = img.height*ratio;
+        const cx = x + (w-nw)/2, cy = y + (h-nh)/2;
+        drawRoundedImage(img, cx, cy, nw, nh, +radius.value);
+      } else {
+        // cover: fill the rect, cropping overflow
+        const ratio = Math.max(w/img.width, h/img.height);
+        const nw = img.width*ratio, nh = img.height*ratio;
+        const cx = x + (w-nw)/2, cy = y + (h-nh)/2;
+        ctx.save();
+        const rr = Math.min(+radius.value, w/2, h/2);
+        if(rr>0){
+          ctx.beginPath();
+          ctx.moveTo(x+rr, y);
+          ctx.arcTo(x+w, y, x+w, y+h, rr);
+          ctx.arcTo(x+w, y+h, x, y+h, rr);
+          ctx.arcTo(x, y+h, x, y, rr);
+          ctx.arcTo(x, y, x+w, y, rr);
+          ctx.closePath();
+          ctx.clip();
+        } else {
+          ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+        }
+        ctx.drawImage(img, cx, cy, nw, nh);
+        ctx.restore();
+      }
+    }
+
+    function build(){
+      setCanvasSize();
+      const W = canvas.width, H = canvas.height;
+      ctx.fillStyle = bg.value; ctx.fillRect(0,0,W,H);
+      const g = +gap.value;
+      let r=+rows.value, c=+cols.value;
+      const preset = layout.value;
+      if(preset==='2x2'){ r=2; c=2; }
+      else if(preset==='3x3'){ r=3; c=3; }
+      else if(preset==='row'){ r=1; c=Math.max(1, items.length); }
+      else if(preset==='col'){ r=Math.max(1, items.length); c=1; }
+      // compute cell sizes with gaps
+      const totalGapX = g*(c-1), totalGapY = g*(r-1);
+      const cellW = (W - totalGapX) / c;
+      const cellH = (H - totalGapY) / r;
+      const cells = [];
+      for(let i=0;i<r;i++){
+        for(let j=0;j<c;j++){
+          const x = j*(cellW+g);
+          const y = i*(cellH+g);
+          cells.push({x,y,w:cellW,h:cellH});
+        }
+      }
+      ctx.imageSmoothingQuality = 'high';
+      items.slice(0, cells.length).forEach((it, idx)=>{
+        drawCell(it.img, cells[idx], fit.value);
+      });
+    }
+
+    async function loadFiles(fileList){
+      const arr = Array.from(fileList);
+      for(const f of arr){
+        if(!f.type.startsWith('image/')) continue;
+        const url = await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f); });
+        const img = await new Promise(res=>{ const im=new Image(); im.onload=()=>res(im); im.src=url; });
+        items.push({src:url, img});
+      }
+      updateThumbs();
+      build();
+    }
+
+    // UI events
+    pick.addEventListener('click', ()=> files.click());
+    files.addEventListener('change', ()=> loadFiles(files.files));
+
+    ;['dragenter','dragover'].forEach(ev=> drop.addEventListener(ev, (e)=>{ e.preventDefault(); e.stopPropagation(); drop.classList.add('drop-active'); }));
+    ;['dragleave','drop'].forEach(ev=> drop.addEventListener(ev, (e)=>{ e.preventDefault(); e.stopPropagation(); if(ev==='drop'){ const list=e.dataTransfer.files; if(list?.length) loadFiles(list); } drop.classList.remove('drop-active'); }));
+
+    layout.addEventListener('change', ()=>{ const custom=layout.value==='custom'; rows.disabled=!custom; cols.disabled=!custom; build(); });
+    sizeSel.addEventListener('change', ()=>{ const custom=sizeSel.value==='custom'; cw.disabled=!custom; ch.disabled=!custom; build(); });
+
+    ;[rows,cols,cw,ch,fit,gap,radius,bg].forEach(el=> el.addEventListener('input', ()=>{ if(el===gap) gapVal.textContent=gap.value+'px'; if(el===radius) radVal.textContent=radius.value+'px'; build(); }));
+    fmt.addEventListener('change', ()=>{ quality.disabled = (fmt.value==='image/png'); qVal.textContent = quality.disabled? 'n/a' : quality.value+'%'; });
+    quality.addEventListener('input', ()=>{ qVal.textContent = quality.disabled? 'n/a' : quality.value+'%'; });
+
+    buildBtn.addEventListener('click', build);
+
+    exportBtn.addEventListener('click', ()=>{
+      const type = fmt.value; const q = Math.max(0.5, Math.min(1, +quality.value/100));
+      canvas.toBlob((blob)=>{ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`collage.${type==='image/png'?'png':type==='image/webp'?'webp':'jpg'}`; a.click(); }, type, q);
+    });
+
+    shuffleBtn.addEventListener('click', ()=>{ for(let i=items.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [items[i],items[j]]=[items[j],items[i]]; } updateThumbs(); build(); });
+    clearBtn.addEventListener('click', ()=>{ if(confirm('Remove all images?')){ items=[]; updateThumbs(); build(); } });
+
+    // Initialize defaults
+    rows.disabled = true; cols.disabled = true; // since preset not custom
+    cw.disabled = true; ch.disabled = true; // since size preset not custom
+    updateThumbs();
+    build();
+  </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Algorithm Visualizer — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#063F5E',
+              secondary: '#1a1a69'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --brand-primary: #063F5E;
+      --brand-secondary: #1a1a69;
+    }
+    body {
+      background: linear-gradient(180deg, #f1f5f9 0%, #ffffff 100%);
+    }
+    #canvas, #graphCanvas {
+      touch-action: none;
+    }
+    pre[data-highlight="true"] {
+      background: rgba(26, 26, 105, 0.08);
+      border-radius: 0.5rem;
+    }
+    .step-active {
+      border-color: rgba(6, 63, 94, 0.25);
+      background: rgba(6, 63, 94, 0.08);
+    }
+    @media (max-width: 768px) {
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <header class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 class="text-3xl font-bold" style="color: var(--brand-primary)">Algorithm Playground</h1>
+        <p class="text-slate-600 mt-1">Step through algorithms with synchronized code highlighting, custom inputs, performance stats, and animated visuals.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="exportWalkthrough" class="px-3 py-2 border rounded text-sm" style="border-color:#E5E7EB">Export walkthrough</button>
+        <a href="../projects.html" class="px-3 py-2 text-white text-sm rounded" style="background: var(--brand-secondary)">Back</a>
+      </div>
+    </header>
+
+    <section class="grid grid-layout gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <aside class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm space-y-5">
+        <div>
+          <label class="text-xs uppercase tracking-wide text-slate-500">Algorithm</label>
+          <select id="algo" class="mt-1 w-full border rounded px-3 py-2 text-sm">
+            <option value="bubble">Bubble Sort</option>
+            <option value="merge">Merge Sort</option>
+            <option value="quick">Quick Sort</option>
+            <option value="heap">Heap Sort</option>
+            <option value="insertion">Insertion Sort</option>
+            <option value="binary">Binary Search</option>
+            <option value="dijkstra">Dijkstra Shortest Path</option>
+            <option value="fibonacci">Fibonacci DP</option>
+            <option value="recursion">Recursion Tree</option>
+          </select>
+        </div>
+
+        <div id="arrayControls" class="space-y-3">
+          <div>
+            <label class="text-xs uppercase tracking-wide text-slate-500">Array (comma separated)</label>
+            <input id="array" class="mt-1 w-full border rounded px-3 py-2 text-sm" placeholder="e.g. 5,3,8,2,1" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-xs uppercase tracking-wide text-slate-500">Random Size
+              <input id="size" type="number" min="3" max="80" value="12" class="mt-1 w-full border rounded px-3 py-2 text-sm" />
+            </label>
+            <label class="text-xs uppercase tracking-wide text-slate-500">Speed <span id="speedVal" class="text-slate-500">400ms</span>
+              <input id="speed" type="range" min="50" max="1200" step="10" value="400" class="mt-2 w-full" />
+            </label>
+          </div>
+          <div class="flex flex-wrap gap-2 text-sm">
+            <button id="gen" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Randomize</button>
+            <button id="run" class="px-3 py-2 text-white rounded" style="background: var(--brand-secondary)">Run</button>
+            <button id="pause" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Pause</button>
+            <button id="prev" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Prev</button>
+            <button id="step" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Next</button>
+            <button id="reset" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Reset</button>
+          </div>
+        </div>
+
+        <div id="graphControls" class="space-y-3 hidden">
+          <div class="flex items-center justify-between">
+            <span class="text-xs uppercase tracking-wide text-slate-500">Graph preset</span>
+            <button id="randomGraph" class="px-2 py-1.5 border rounded text-xs" style="border-color:#E5E7EB">Randomize</button>
+          </div>
+          <div class="space-y-2 text-sm">
+            <label class="flex items-center gap-2">
+              <span>Nodes</span>
+              <input id="graphNodes" type="number" min="3" max="9" value="6" class="w-20 border rounded px-2 py-1" />
+            </label>
+            <label class="flex items-center gap-2">
+              <span>Density</span>
+              <input id="graphDensity" type="range" min="0.2" max="1" step="0.1" value="0.6" class="flex-1" />
+            </label>
+            <label class="flex items-center gap-2">
+              <span>Start Node</span>
+              <select id="graphStart" class="border rounded px-2 py-1 text-sm"></select>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500">
+            <span>Dark Mode</span>
+            <label class="inline-flex items-center gap-2 text-sm"><input id="dark" type="checkbox" class="rounded" /> <span>Toggle</span></label>
+          </div>
+        </div>
+
+        <div class="border rounded-xl p-3 bg-slate-50 text-sm space-y-2">
+          <div><strong>Comparisons:</strong> <span id="statComparisons">0</span></div>
+          <div><strong>Swaps/Updates:</strong> <span id="statSwaps">0</span></div>
+          <div><strong>Elapsed:</strong> <span id="statTime">0 ms</span></div>
+        </div>
+      </aside>
+
+      <div class="space-y-6">
+        <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-xl font-semibold" style="color: var(--brand-primary)">Visualization</h2>
+            <div class="flex flex-wrap gap-2 text-xs text-slate-500">
+              <span>Current step: <span id="stepIndex">0</span>/<span id="stepTotal">0</span></span>
+              <span>Value traced: <span id="valueTrace">—</span></span>
+            </div>
+          </div>
+          <div class="mt-4 grid lg:grid-cols-2 gap-4">
+            <canvas id="canvas" class="w-full h-[340px] border rounded-lg bg-white"></canvas>
+            <canvas id="graphCanvas" class="w-full h-[340px] border rounded-lg bg-white hidden"></canvas>
+          </div>
+          <div class="mt-3 text-xs text-slate-500">Use Prev/Next for detailed stepping. Binary search highlights the mid element, Dijkstra shows frontier expansion, and Fibonacci DP renders tabulation progress.</div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold" style="color: var(--brand-primary)">Pseudocode</h3>
+              <button id="copyCode" class="text-xs px-2 py-1 border rounded" style="border-color:#E5E7EB">Copy</button>
+            </div>
+            <pre id="code" class="mt-3 text-xs whitespace-pre-wrap leading-5"></pre>
+          </div>
+          <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm space-y-3">
+            <h3 class="text-lg font-semibold" style="color: var(--brand-primary)">Explanation</h3>
+            <div id="explain" class="text-sm text-slate-700 leading-6"></div>
+            <section>
+              <h4 class="uppercase text-xs font-semibold tracking-wide text-slate-500">Key Concepts</h4>
+              <ul id="concepts" class="mt-2 space-y-2 text-sm text-slate-600 list-disc pl-5"></ul>
+            </section>
+          </div>
+        </div>
+
+        <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold" style="color: var(--brand-primary)">Step Log</h3>
+            <button id="downloadLog" class="text-xs px-2 py-1 border rounded" style="border-color:#E5E7EB">Download log</button>
+          </div>
+          <div id="stepLog" class="mt-3 max-h-64 overflow-y-auto border rounded-lg divide-y text-sm"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const canvas = $('#canvas');
+    const ctx = canvas.getContext('2d');
+    const graphCanvas = $('#graphCanvas');
+    const gctx = graphCanvas.getContext('2d');
+
+    const speed = $('#speed');
+    const speedVal = $('#speedVal');
+    const algoSel = $('#algo');
+    const codeEl = $('#code');
+    const explainEl = $('#explain');
+    const conceptsEl = $('#concepts');
+    const stepLog = $('#stepLog');
+    const stepIndexEl = $('#stepIndex');
+    const stepTotalEl = $('#stepTotal');
+    const valueTraceEl = $('#valueTrace');
+    const comparisonsEl = $('#statComparisons');
+    const swapsEl = $('#statSwaps');
+    const timeEl = $('#statTime');
+
+    let arr = [];
+    let steps = [];
+    let stepIndex = 0;
+    let timer = null;
+    let running = false;
+    let stats = { comparisons: 0, swaps: 0, start: 0 };
+    let lastLog = [];
+    let dijkstraGraph = null;
+
+    const DARK_BG = '#0f172a';
+
+    function resizeCanvas() {
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = canvas.clientWidth * ratio;
+      canvas.height = canvas.clientHeight * ratio;
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      graphCanvas.width = graphCanvas.clientWidth * ratio;
+      graphCanvas.height = graphCanvas.clientHeight * ratio;
+      gctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    function setPseudo(name) {
+      const snippets = {
+        bubble: `for i ← 0 … n-1
+  for j ← 0 … n-2-i
+    if a[j] > a[j+1]
+      swap(a[j], a[j+1])`,
+        merge: `mergeSort(a):
+  if n ≤ 1 return a
+  mid ← n / 2
+  left ← mergeSort(a[0:mid])
+  right ← mergeSort(a[mid:n])
+  return merge(left, right)`...
+```}

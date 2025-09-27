@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flashcards — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:{primary:'#063F5E',secondary:'#1a1a69'}}}}}</script>
+  <style>:root{--brand-primary:#063F5E;--brand-secondary:#1a1a69}</style>
+</head>
+<body class="min-h-screen bg-white text-slate-800">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold" style="color:var(--brand-primary)">Flashcards Learning Tool</h1>
+      <a href="../projects.html" class="text-sm text-white px-3 py-2 rounded" style="background:var(--brand-secondary)">Back</a>
+    </header>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+      <!-- Creator / Manager -->
+      <section class="lg:col-span-2 p-4 border rounded-lg bg-white">
+        <h2 class="font-semibold mb-3" style="color:var(--brand-primary)">Create / Manage</h2>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <input id="q" placeholder="Question" class="border rounded px-3 py-2" />
+          <input id="a" placeholder="Answer" class="border rounded px-3 py-2" />
+          <input id="cat" placeholder="Category (optional)" class="border rounded px-3 py-2" />
+          <input id="tags" placeholder="Tags comma-separated (optional)" class="border rounded px-3 py-2" />
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="add" class="px-4 py-2 text-white rounded" style="background:var(--brand-secondary)">Add</button>
+          <button id="clear" class="px-4 py-2 border rounded" style="border-color:#E5E7EB">Clear All</button>
+          <button id="export" class="px-4 py-2 border rounded" style="border-color:#E5E7EB">Export JSON</button>
+          <label class="px-4 py-2 border rounded cursor-pointer" style="border-color:#E5E7EB">Import JSON
+            <input id="import" type="file" accept="application/json" class="hidden" />
+          </label>
+          <button id="sample" class="px-4 py-2 border rounded" style="border-color:#E5E7EB">Load Samples</button>
+        </div>
+
+        <div class="mt-4 grid sm:grid-cols-4 gap-3 items-end">
+          <input id="search" placeholder="Search (question/answer/tags)" class="border rounded px-3 py-2 sm:col-span-2" />
+          <select id="filterCat" class="border rounded px-3 py-2">
+            <option value="">All Categories</option>
+          </select>
+          <select id="sort" class="border rounded px-3 py-2">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="alpha">Alphabetical</option>
+          </select>
+        </div>
+
+        <section class="mt-6 grid md:grid-cols-2 gap-4" id="list"></section>
+      </section>
+
+      <!-- Study -->
+      <aside class="p-4 border rounded-lg bg-white">
+        <h2 class="font-semibold mb-3" style="color:var(--brand-primary)">Study Mode</h2>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <select id="studyCat" class="border rounded px-3 py-2">
+            <option value="">All Categories</option>
+          </select>
+          <select id="order" class="border rounded px-3 py-2">
+            <option value="original">Original order</option>
+            <option value="shuffle">Shuffle</option>
+          </select>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <button id="start" class="px-4 py-2 text-white rounded" style="background:var(--brand-secondary)">Start</button>
+          <button id="resetSession" class="px-4 py-2 border rounded" style="border-color:#E5E7EB">Reset Session</button>
+        </div>
+
+        <div id="cardWrap" class="mt-4 hidden">
+          <div class="p-4 border rounded-lg bg-slate-50">
+            <div class="text-sm text-slate-500">Category: <span id="studyCatLabel">—</span></div>
+            <div class="mt-2 text-lg font-semibold" id="studyQ"></div>
+            <div class="mt-2 hidden" id="studyA"></div>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button id="show" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Show Answer (Space)</button>
+            <button id="again" class="px-3 py-2 border rounded text-red-600 border-red-200">Again</button>
+            <button id="got" class="px-3 py-2 text-white rounded" style="background:var(--brand-secondary)">Got it</button>
+            <button id="prev" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Prev (←)</button>
+            <button id="next" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Next (→)</button>
+          </div>
+          <div class="mt-3 text-sm text-slate-600">Progress: <span id="progress">0 / 0</span> • Correct: <span id="correct">0</span> • Wrong: <span id="wrong">0</span></div>
+        </div>
+
+        <div class="mt-6 text-xs text-slate-500">
+          Tips:
+          <ul class="list-disc pl-4 mt-1 space-y-1">
+            <li>Use Space to show/hide answer.</li>
+            <li>Use ← → to move between cards.</li>
+            <li>"Again" sends the card later in the session; "Got it" moves to next.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const KEY='flashcards:data';
+    const $ = s => document.querySelector(s);
+
+    const q = $('#q'); const a = $('#a'); const cat = $('#cat'); const tags = $('#tags');
+    const addBtn = $('#add'); const clearBtn = $('#clear'); const exportBtn = $('#export'); const importInp = $('#import'); const sampleBtn = $('#sample');
+    const list = $('#list'); const search = $('#search'); const filterCat = $('#filterCat'); const sortSel = $('#sort');
+
+    const studyCat = $('#studyCat'); const orderSel = $('#order');
+    const startBtn = $('#start'); const resetSessionBtn = $('#resetSession');
+    const cardWrap = $('#cardWrap'); const studyQ = $('#studyQ'); const studyA = $('#studyA');
+    const showBtn = $('#show'); const nextBtn = $('#next'); const prevBtn = $('#prev'); const againBtn = $('#again'); const gotBtn = $('#got');
+    const progressEl = $('#progress'); const correctEl = $('#correct'); const wrongEl = $('#wrong'); const studyCatLabel = $('#studyCatLabel');
+
+    function load(){ try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch { return []; } }
+    function save(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+
+    function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
+
+    function normalizeTags(s){ return s.split(',').map(t=>t.trim()).filter(Boolean); }
+
+    function categories(){
+      const d=load(); const set=new Set(); d.forEach(c=>{ if(c.cat) set.add(c.cat); });
+      return Array.from(set).sort();
+    }
+
+    function refreshCategoryFilters(){
+      const cats = categories();
+      function fill(sel){ sel.innerHTML = '<option value="">All Categories</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join(''); }
+      fill(filterCat); fill(studyCat);
+    }
+
+    function renderList(){
+      const d = load();
+      // filter & search
+      let items = d.filter(x=> !filterCat.value || x.cat===filterCat.value);
+      const term = search.value.trim().toLowerCase();
+      if(term){ items = items.filter(x=> (x.q+x.a+(x.tags||[]).join(' ')).toLowerCase().includes(term)); }
+      // sort
+      if(sortSel.value==='alpha') items.sort((x,y)=> x.q.localeCompare(y.q));
+      else if(sortSel.value==='oldest') items.sort((x,y)=> x.created - y.created);
+      else items.sort((x,y)=> y.created - x.created);
+
+      if(items.length===0){ list.innerHTML = '<div class="col-span-full text-center text-slate-500">No cards yet</div>'; return; }
+
+      list.innerHTML = items.map(c=>`
+        <article class="p-4 border rounded-lg bg-white">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold" style="color:var(--brand-primary)">${escapeHTML(c.q)}</div>
+              <div class="mt-1 text-slate-700 text-sm">${escapeHTML(c.a)}</div>
+              <div class="mt-2 text-xs text-slate-500 flex flex-wrap gap-2">
+                ${c.cat?`<span class="px-1.5 py-0.5 rounded border">${escapeHTML(c.cat)}</span>`:''}
+                ${(c.tags||[]).map(t=>`<span class="px-1.5 py-0.5 rounded border">#${escapeHTML(t)}</span>`).join('')}
+              </div>
+            </div>
+            <div class="text-right text-xs text-slate-500">${new Date(c.created).toLocaleDateString()}</div>
+          </div>
+          <div class="mt-2 flex items-center justify-end gap-3 text-sm">
+            <button data-id="${c.id}" class="edit text-brand-secondary">Edit</button>
+            <button data-id="${c.id}" class="del text-red-600">Delete</button>
+          </div>
+        </article>`).join('');
+
+      list.querySelectorAll('.del').forEach(b=>b.addEventListener('click', e=>{
+        const id=e.currentTarget.dataset.id; const d=load(); const i=d.findIndex(x=>x.id===id); if(i>-1){ d.splice(i,1); save(d); refreshCategoryFilters(); renderList(); }
+      }));
+      list.querySelectorAll('.edit').forEach(b=>b.addEventListener('click', e=>{
+        const id=e.currentTarget.dataset.id; const d=load(); const it=d.find(x=>x.id===id); if(!it) return;
+        const nq = prompt('Edit question:', it.q); if(nq===null) return;
+        const na = prompt('Edit answer:', it.a); if(na===null) return;
+        const ncat = prompt('Edit category (optional):', it.cat||''); if(ncat===null) return;
+        const ntags = prompt('Edit tags comma-separated:', (it.tags||[]).join(', ')); if(ntags===null) return;
+        it.q = nq.trim(); it.a = na.trim(); it.cat = ncat.trim()||''; it.tags = normalizeTags(ntags);
+        it.updated = Date.now(); save(d); refreshCategoryFilters(); renderList();
+      }));
+    }
+
+    function escapeHTML(s){ return (s+'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m] )); }
+
+    // Create
+    addBtn.addEventListener('click', ()=>{
+      const qq=q.value.trim(), aa=a.value.trim(); if(!qq||!aa) return alert('Fill both question and answer');
+      const d=load(); d.push({ id:uid(), q:qq, a:aa, cat: (cat.value.trim()||''), tags: normalizeTags(tags.value||''), created:Date.now(), updated:Date.now() });
+      save(d); q.value=''; a.value=''; cat.value=''; tags.value=''; refreshCategoryFilters(); renderList();
+    });
+
+    clearBtn.addEventListener('click', ()=>{ if(confirm('Delete all cards?')){ localStorage.removeItem(KEY); refreshCategoryFilters(); renderList(); }});
+
+    exportBtn.addEventListener('click', ()=>{
+      const d = load(); const blob = new Blob([JSON.stringify(d,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='flashcards.json'; a.click(); setTimeout(()=> URL.revokeObjectURL(url), 1000);
+    });
+
+    importInp.addEventListener('change', ()=>{
+      const f = importInp.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{
+        try{ const arr=JSON.parse(r.result); if(!Array.isArray(arr)) throw 0; const now=Date.now(); const data=arr.map(x=>({ id:x.id||uid(), q:String(x.q||''), a:String(x.a||''), cat:String(x.cat||''), tags:Array.isArray(x.tags)?x.tags.map(String):[], created:x.created||now, updated:x.updated||now })); save(data); refreshCategoryFilters(); renderList(); alert('Imported '+data.length+' cards.'); }
+        catch{ alert('Invalid JSON format. Expect an array of {q,a,cat?,tags?}.'); }
+      }; r.readAsText(f);
+    });
+
+    sampleBtn.addEventListener('click', ()=>{
+      if(!confirm('Load sample cards? This will append to your current list.')) return;
+      const samples = [
+        { q:'Capital of Rwanda?', a:'Kigali', cat:'Geography', tags:['africa','capitals'] },
+        { q:'2 + 2 = ?', a:'4', cat:'Math', tags:['arithmetic'] },
+        { q:'HTTP stands for?', a:'HyperText Transfer Protocol', cat:'Tech', tags:['web','network'] },
+      ].map(x=>({ id:uid(), ...x, created:Date.now(), updated:Date.now() }));
+      const d=load(); d.push(...samples); save(d); refreshCategoryFilters(); renderList();
+    });
+
+    ;[search, filterCat, sortSel].forEach(el=> el.addEventListener('input', renderList));
+
+    // Study mode
+    let deck = []; // session deck of ids
+    let idx = 0; let correct = 0; let wrong = 0;
+
+    function buildDeck(){
+      const d = load(); let items = d.filter(x=> !studyCat.value || x.cat===studyCat.value);
+      deck = items.map(x=> x.id);
+      if(orderSel.value==='shuffle'){
+        for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
+      }
+      idx = 0; correct = 0; wrong = 0; updateProgress();
+    }
+
+    function currentItem(){ const d=load(); const id=deck[idx]; return d.find(x=>x.id===id); }
+
+    function showCurrent(){
+      const it=currentItem(); if(!it){ cardWrap.classList.add('hidden'); return; }
+      studyCatLabel.textContent = it.cat||'—';
+      studyQ.textContent = it.q; studyA.textContent = it.a; studyA.classList.add('hidden');
+      cardWrap.classList.remove('hidden');
+      updateProgress();
+    }
+
+    function updateProgress(){ progressEl.textContent = (deck.length? (idx+1):0) + ' / ' + deck.length; correctEl.textContent = correct; wrongEl.textContent = wrong; }
+
+    startBtn.addEventListener('click', ()=>{ buildDeck(); if(deck.length===0){ alert('No cards in this selection.'); return; } showCurrent(); });
+    resetSessionBtn.addEventListener('click', ()=>{ deck=[]; idx=0; correct=0; wrong=0; updateProgress(); cardWrap.classList.add('hidden'); });
+
+    showBtn.addEventListener('click', ()=> studyA.classList.toggle('hidden'));
+
+    nextBtn.addEventListener('click', ()=>{ if(deck.length===0) return; idx = Math.min(deck.length-1, idx+1); showCurrent(); });
+    prevBtn.addEventListener('click', ()=>{ if(deck.length===0) return; idx = Math.max(0, idx-1); showCurrent(); });
+
+    againBtn.addEventListener('click', ()=>{
+      if(deck.length===0) return; wrong++;
+      // push current card further in the deck (simple spaced repetition)
+      const cur = deck[idx]; deck.splice(idx,1);
+      const insertAt = Math.min(deck.length, idx+3); // reappear after a few cards
+      deck.splice(insertAt,0,cur);
+      if(idx >= deck.length) idx = deck.length-1;
+      showCurrent();
+    });
+
+    gotBtn.addEventListener('click', ()=>{ if(deck.length===0) return; correct++; if(idx < deck.length-1){ idx++; showCurrent(); } else { updateProgress(); alert('Session complete!'); }});
+
+    // Keyboard shortcuts: Space -> show; Arrows -> nav
+    document.addEventListener('keydown', (e)=>{
+      if(cardWrap.classList.contains('hidden')) return;
+      if(e.code==='Space'){ e.preventDefault(); showA.classList?.toggle?.('hidden'); }
+      if(e.key==='ArrowRight'){ e.preventDefault(); nextBtn.click(); }
+      if(e.key==='ArrowLeft'){ e.preventDefault(); prevBtn.click(); }
+    });
+
+    function init(){ refreshCategoryFilters(); renderList(); }
+    init();
+  </script>
+</body>
+</html>

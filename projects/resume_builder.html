@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate Resume Builder (PDF)</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 20px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; color: #111827;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .shell { width: 100%; max-width: 1200px; display: grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 1024px) { .shell { grid-template-columns: 1fr 0.9fr; } }
+
+    .panel {
+      background: #fff; border-radius: 18px; border: 1px solid #e5e7eb; box-shadow: 0 12px 30px rgba(0,0,0,.12);
+      overflow: hidden;
+    }
+    header.panel-head { padding: 18px 18px 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    header.panel-head img { height: 28px; width: auto; }
+    header.panel-head h1 { margin: 0; font-size: 1.5rem; color: #1f2937; }
+    header.panel-head p { margin: 0 0 12px; color: #6b7280; font-size: .95rem; text-align: center; }
+
+    .panel-body { padding: 16px; }
+    .group { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background:#f9fafb; }
+    .group + .group { margin-top: 12px; }
+    .group-title { margin: 0 0 10px; font-size: 1rem; font-weight: 600; color:#374151; }
+
+    label { display:block; font-size:.9rem; color:#374151; margin-bottom:6px; }
+    input[type="text"], input[type="email"], input[type="tel"], textarea, select {
+      width: 100%; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; font-size: .95rem;
+      outline: none; background: #fff; transition: border-color .2s;
+    }
+    textarea { resize: vertical; min-height: 70px; }
+    input:focus, textarea:focus, select:focus { border-color: var(--brand-secondary); }
+
+    .row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    @media (min-width: 640px) { .row.two { grid-template-columns: 1fr 1fr; } }
+
+    .btn {
+      appearance: none; border: none; cursor: pointer; background: var(--brand-secondary); color: #fff;
+      border-radius: 10px; padding: 10px 12px; font-size: .95rem; transition: background .2s ease, transform .05s; height: 42px;
+    }
+    .btn:hover { background:#131357; }
+    .btn:active { transform: translateY(1px); }
+    .btn.outline { background:#fff; color: var(--brand-secondary); border:1px solid var(--brand-secondary); }
+
+    .list { display: grid; gap: 10px; }
+    .list-item { background:#fff; border:1px solid #e5e7eb; border-radius: 10px; padding: 10px; }
+
+    .actions { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* Preview A4 page */
+    .preview-wrap { padding: 8px; }
+    .a4 {
+      width: 794px; height: 1123px; /* ~A4 at 96dpi */
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; margin: 0 auto; position: relative; overflow: hidden;
+    }
+    @media (max-width: 840px) { .a4 { width: 100%; height: auto; } }
+    .resume {
+      display: grid; grid-template-columns: 260px 1fr; height: 100%;
+    }
+    @media (max-width: 840px) { .resume { grid-template-columns: 1fr; } }
+
+    .sidebar { background:#f3f4f6; padding: 22px; }
+    .main    { padding: 22px 26px; }
+
+    .name { font-size: 1.6rem; font-weight: 700; color:#111827; margin:0; }
+    .role { font-size: .95rem; color:#6b7280; margin:2px 0 8px; }
+    .section-title { font-weight: 700; font-size: .95rem; letter-spacing:.02em; color:#374151; margin: 18px 0 10px; }
+    .item-title { font-weight: 600; color:#111827; margin: 2px 0; }
+    .muted { color:#6b7280; }
+    .dot { display:inline-block; width:6px; height:6px; background:#9ca3af; border-radius:50%; margin: 0 8px; vertical-align: middle; }
+    .chips { display:flex; flex-wrap: wrap; gap:6px; }
+    .chip { background:#e5e7eb; color:#374151; font-size:.8rem; padding:4px 8px; border-radius:999px; }
+
+    /* Profile photo styles */
+    .profile { width: 120px; height: 120px; border-radius: 9999px; overflow: hidden; margin: 10px 0; border: 3px solid #e5e7eb; background: #fff; display:flex; align-items:center; justify-content:center; }
+    .profile img { width: 100%; height: 100%; object-fit: cover; display:block; }
+
+    .brand-bar { height: 4px; width: 100%; background: linear-gradient(90deg, var(--brand-primary), var(--brand-secondary)); margin: 4px 0 10px; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- Builder -->
+    <div class="panel">
+      <header class="panel-head">
+        <img src="../assets/logo.png" alt="SimHireEstate" />
+        <h1>SimHireEstate Resume Builder</h1>
+        <p>Fill the form and export a clean PDF resume. Frontend only.</p>
+      </header>
+      <div class="panel-body">
+        <!-- Personal Info -->
+        <div class="group">
+          <h3 class="group-title">Personal Information</h3>
+          <div class="row two">
+            <div>
+              <label for="fullName">Full Name</label>
+              <input id="fullName" type="text" placeholder="e.g., Jane Doe" />
+            </div>
+            <div>
+              <label for="role">Role / Title</label>
+              <input id="role" type="text" placeholder="e.g., Frontend Developer" />
+            </div>
+          </div>
+          <div class="row two">
+            <div>
+              <label for="email">Email</label>
+              <input id="email" type="email" placeholder="jane@example.com" />
+            </div>
+            <div>
+              <label for="phone">Phone</label>
+              <input id="phone" type="tel" placeholder="+250 7xx xxx xxx" />
+            </div>
+          </div>
+          <div class="row two">
+            <div>
+              <label for="location">Location</label>
+              <input id="location" type="text" placeholder="Kigali, Rwanda" />
+            </div>
+            <div>
+              <label for="website">Website / LinkedIn</label>
+              <input id="website" type="text" placeholder="https://..." />
+            </div>
+          </div>
+          <div class="row two">
+            <div>
+              <label for="photo">Profile Photo</label>
+              <input id="photo" type="file" accept="image/*" />
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="profile" id="photoPreview"><span style="color:#9ca3af; font-size:.8rem;">No image</span></div>
+            </div>
+          </div>
+          <div>
+            <label for="summary">Professional Summary</label>
+            <textarea id="summary" placeholder="Brief 2–3 sentence summary highlighting your value."></textarea>
+          </div>
+        </div>
+
+        <!-- Experience -->
+        <div class="group">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <h3 class="group-title" style="margin:0">Experience</h3>
+            <button class="btn outline" id="addExp">+ Add Experience</button>
+          </div>
+          <div class="list" id="expList"></div>
+        </div>
+
+        <!-- Education -->
+        <div class="group">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <h3 class="group-title" style="margin:0">Education</h3>
+            <button class="btn outline" id="addEdu">+ Add Education</button>
+          </div>
+          <div class="list" id="eduList"></div>
+        </div>
+
+        <!-- Skills -->
+        <div class="group">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <h3 class="group-title" style="margin:0">Skills</h3>
+            <div class="actions">
+              <input id="skillInput" type="text" placeholder="Add a skill and press Enter" style="width:240px" />
+              <button class="btn outline" id="addSkill">+ Add</button>
+            </div>
+          </div>
+          <div class="list" id="skillList"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+          <button class="btn" id="refreshPreview">Refresh Preview</button>
+          <button class="btn" id="downloadPdf">Download PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="panel">
+      <header class="panel-head">
+        <img src="../assets/logo.png" alt="SimHireEstate" />
+        <h1>Preview</h1>
+        <p>Ensure your details look correct before exporting.</p>
+      </header>
+      <div class="panel-body preview-wrap">
+        <div id="a4" class="a4">
+          <div id="resume" class="resume">
+            <aside class="sidebar">
+              <div class="brand-bar"></div>
+              <div class="profile" id="pvPhotoWrap" aria-label="Profile photo"><img id="pvPhoto" alt="Profile photo" style="display:none" /></div>
+              <div id="pvName" class="name">Jane Doe</div>
+              <div id="pvRole" class="role">Frontend Developer</div>
+
+              <div class="section-title">Contact</div>
+              <div class="muted" id="pvEmail">jane@example.com</div>
+              <div class="muted" id="pvPhone">+250 7xx xxx xxx</div>
+              <div class="muted" id="pvLocation">Kigali, Rwanda</div>
+              <div class="muted" id="pvWebsite">linkedin.com/in/janedoe</div>
+
+              <div class="section-title">Skills</div>
+              <div id="pvSkills" class="chips"></div>
+            </aside>
+            <section class="main">
+              <div class="brand-bar"></div>
+              <div class="section-title">Summary</div>
+              <div id="pvSummary" class="muted">Passionate frontend developer with hands-on experience building responsive, accessible web apps. Strong focus on performance, UX, and maintainable code.</div>
+
+              <div class="section-title">Experience</div>
+              <div id="pvExp"></div>
+
+              <div class="section-title">Education</div>
+              <div id="pvEdu"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Libraries for PDF export (frontend only) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    // Simple state
+    const state = {
+      personal: { fullName: 'Jane Doe', role: 'Frontend Developer', email: 'jane@example.com', phone: '+250 7xx xxx xxx', location: 'Kigali, Rwanda', website: 'linkedin.com/in/janedoe', summary: 'Passionate frontend developer with hands-on experience building responsive, accessible web apps. Strong focus on performance, UX, and maintainable code.' },
+      experience: [
+        { title:'Frontend Developer', company:'Acme Inc.', start:'2022', end:'Present', desc:'Built modern UI components, optimized performance, and collaborated with designers to deliver features on time.' },
+      ],
+      education: [
+        { degree:'BSc Computer Science', school:'ABC University', start:'2018', end:'2022', desc:'Graduated with honors. Focus on web technologies and HCI.' },
+      ],
+      skills: ['HTML', 'CSS', 'JavaScript', 'Tailwind', 'React'],
+      photoDataUrl: '' // base64 image data for profile photo
+    };
+
+    // Elements mapping
+    const els = {
+      fullName: document.getElementById('fullName'),
+      role: document.getElementById('role'),
+      email: document.getElementById('email'),
+      phone: document.getElementById('phone'),
+      location: document.getElementById('location'),
+      website: document.getElementById('website'),
+      summary: document.getElementById('summary'),
+      photoInput: document.getElementById('photo'),
+      photoPreview: document.getElementById('photoPreview'),
+      expList: document.getElementById('expList'),
+      eduList: document.getElementById('eduList'),
+      skillInput: document.getElementById('skillInput'),
+      skillList: document.getElementById('skillList'),
+      addExp: document.getElementById('addExp'),
+      addEdu: document.getElementById('addEdu'),
+      addSkill: document.getElementById('addSkill'),
+      refreshPreview: document.getElementById('refreshPreview'),
+      downloadPdf: document.getElementById('downloadPdf'),
+      pv: {
+        name: document.getElementById('pvName'),
+        role: document.getElementById('pvRole'),
+        email: document.getElementById('pvEmail'),
+        phone: document.getElementById('pvPhone'),
+        location: document.getElementById('pvLocation'),
+        website: document.getElementById('pvWebsite'),
+        summary: document.getElementById('pvSummary'),
+        skills: document.getElementById('pvSkills'),
+        exp: document.getElementById('pvExp'),
+        edu: document.getElementById('pvEdu'),
+        photo: document.getElementById('pvPhoto'),
+        photoWrap: document.getElementById('pvPhotoWrap'),
+      }
+    };
+
+    // Bind inputs to state
+    function bindPersonal() {
+      els.fullName.value = state.personal.fullName;
+      els.role.value = state.personal.role;
+      els.email.value = state.personal.email;
+      els.phone.value = state.personal.phone;
+      els.location.value = state.personal.location;
+      els.website.value = state.personal.website;
+      els.summary.value = state.personal.summary;
+
+      const handler = (key) => (e) => { state.personal[key] = e.target.value; };
+      els.fullName.addEventListener('input', handler('fullName'));
+      els.role.addEventListener('input', handler('role'));
+      els.email.addEventListener('input', handler('email'));
+      els.phone.addEventListener('input', handler('phone'));
+      els.location.addEventListener('input', handler('location'));
+      els.website.addEventListener('input', handler('website'));
+      els.summary.addEventListener('input', handler('summary'));
+
+      // Handle photo upload and preview
+      els.photoInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          state.photoDataUrl = reader.result;
+          // Preview in form
+          const img = new Image();
+          img.onload = () => {
+            els.photoPreview.innerHTML = '';
+            els.photoPreview.appendChild(img);
+          };
+          img.src = state.photoDataUrl;
+          // Update preview panel photo
+          renderPreview();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderList(container, items, fields) {
+      container.innerHTML = '';
+      items.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+          <div class="row two">
+            <div>
+              <label>${fields[0].label}</label>
+              <input type="text" data-key="${fields[0].key}" data-idx="${idx}" value="${item[fields[0].key] || ''}" />
+            </div>
+            <div>
+              <label>${fields[1].label}</label>
+              <input type="text" data-key="${fields[1].key}" data-idx="${idx}" value="${item[fields[1].key] || ''}" />
+            </div>
+          </div>
+          <div class="row two">
+            <div>
+              <label>Start</label>
+              <input type="text" data-key="start" data-idx="${idx}" value="${item.start || ''}" />
+            </div>
+            <div>
+              <label>End</label>
+              <input type="text" data-key="end" data-idx="${idx}" value="${item.end || ''}" />
+            </div>
+          </div>
+          <div>
+            <label>Description</label>
+            <textarea data-key="desc" data-idx="${idx}">${item.desc || ''}</textarea>
+          </div>
+          <div class="actions">
+            <button class="btn outline" data-action="remove" data-idx="${idx}">Remove</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      container.querySelectorAll('input, textarea').forEach(el => {
+        el.addEventListener('input', (e) => {
+          const idx = +e.target.getAttribute('data-idx');
+          const key = e.target.getAttribute('data-key');
+          items[idx][key] = e.target.value;
+        });
+      });
+      container.querySelectorAll('button[data-action="remove"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = +btn.getAttribute('data-idx');
+          items.splice(idx, 1);
+          renderEverything();
+        });
+      });
+    }
+
+    function renderSkills() {
+      els.skillList.innerHTML = '';
+      state.skills.forEach((s, i) => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'space-between';
+        div.innerHTML = `<span>${s}</span><button class="btn outline" data-i="${i}">Remove</button>`;
+        els.skillList.appendChild(div);
+      });
+      els.skillList.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+        const i = +b.getAttribute('data-i');
+        state.skills.splice(i,1);
+        renderEverything();
+      }));
+    }
+
+    function addExperience() { state.experience.push({ title:'', company:'', start:'', end:'', desc:'' }); renderEverything(); }
+    function addEducation() { state.education.push({ degree:'', school:'', start:'', end:'', desc:'' }); renderEverything(); }
+
+    function addSkill() {
+      const s = els.skillInput.value.trim();
+      if (!s) return;
+      state.skills.push(s);
+      els.skillInput.value = '';
+      renderEverything();
+    }
+
+    function renderPreview() {
+      // Personal
+      els.pv.name.textContent = state.personal.fullName || '';
+      els.pv.role.textContent = state.personal.role || '';
+      els.pv.email.textContent = state.personal.email || '';
+      els.pv.phone.textContent = state.personal.phone || '';
+      els.pv.location.textContent = state.personal.location || '';
+      els.pv.website.textContent = state.personal.website || '';
+      els.pv.summary.textContent = state.personal.summary || '';
+
+      // Photo
+      if (state.photoDataUrl) {
+        els.pv.photo.src = state.photoDataUrl;
+        els.pv.photo.style.display = 'block';
+      } else {
+        els.pv.photo.removeAttribute('src');
+        els.pv.photo.style.display = 'none';
+      }
+
+      // Skills
+      els.pv.skills.innerHTML = '';
+      state.skills.forEach(s => {
+        const span = document.createElement('span');
+        span.className = 'chip';
+        span.textContent = s;
+        els.pv.skills.appendChild(span);
+      });
+
+      // Experience
+      els.pv.exp.innerHTML = '';
+      state.experience.forEach(exp => {
+        const s = document.createElement('div');
+        s.style.marginBottom = '10px';
+        s.innerHTML = `
+          <div class="item-title">${exp.title || ''} — ${exp.company || ''}</div>
+          <div class="muted">${exp.start || ''} <span class="dot"></span> ${exp.end || ''}</div>
+          <div class="muted">${exp.desc || ''}</div>
+        `;
+        els.pv.exp.appendChild(s);
+      });
+
+      // Education
+      els.pv.edu.innerHTML = '';
+      state.education.forEach(edu => {
+        const s = document.createElement('div');
+        s.style.marginBottom = '10px';
+        s.innerHTML = `
+          <div class="item-title">${edu.degree || ''} — ${edu.school || ''}</div>
+          <div class="muted">${edu.start || ''} <span class=\"dot\"></span> ${edu.end || ''}</div>
+          <div class="muted">${edu.desc || ''}</div>
+        `;
+        els.pv.edu.appendChild(s);
+      });
+    }
+
+    function renderEverything() {
+      renderList(els.expList, state.experience, [ {label:'Title', key:'title'}, {label:'Company', key:'company'} ]);
+      renderList(els.eduList, state.education, [ {label:'Degree', key:'degree'}, {label:'School', key:'school'} ]);
+      renderSkills();
+      renderPreview();
+    }
+
+    function setupActions() {
+      els.addExp.addEventListener('click', addExperience);
+      els.addEdu.addEventListener('click', addEducation);
+      els.addSkill.addEventListener('click', addSkill);
+      els.skillInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } });
+      els.refreshPreview.addEventListener('click', renderPreview);
+
+      els.downloadPdf.addEventListener('click', async () => {
+        try {
+          // Ensure libraries are present
+          if (!window.html2canvas) { alert('Export library not loaded. Please reload the page.'); return; }
+          if (!window.jspdf || !window.jspdf.jsPDF) { alert('PDF library not loaded. Please reload the page.'); return; }
+
+          // Ensure preview is up to date before export
+          renderPreview();
+          await new Promise(r => setTimeout(r, 50)); // allow DOM to paint
+
+          const a4 = document.getElementById('a4');
+          const canvas = await html2canvas(a4, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            windowWidth: a4.scrollWidth,
+            windowHeight: a4.scrollHeight
+          });
+
+          const imgData = canvas.toDataURL('image/png');
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'pt', 'a4');
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          const imgWidth = pageWidth;
+          const imgHeight = canvas.height * (imgWidth / canvas.width);
+
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+          // Add extra pages if needed
+          let heightLeft = imgHeight - pageHeight;
+          while (heightLeft > 0) {
+            pdf.addPage();
+            const position = (heightLeft - imgHeight); // negative offset to show next slice
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+
+          pdf.save(`${(state.personal.fullName || 'resume').replace(/\s+/g,'_')}.pdf`);
+        } catch (err) {
+          console.error('PDF export failed:', err);
+          alert('Failed to export PDF. Please try again.');
+        }
+      });
+    }
+
+    function init() {
+      bindPersonal();
+      renderEverything();
+      setupActions();
+    }
+
+    init();
+  </script>
+</body>
+</html>

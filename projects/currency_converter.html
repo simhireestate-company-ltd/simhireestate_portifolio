@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimHireEstate Currency Converter</title>
+    <link rel="icon" href="../assets/logo.png" />
+    <style>
+        :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .converter {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            color: #555;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        input, select {
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--brand-secondary);
+        }
+
+        .swap-btn {
+            background: var(--brand-secondary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background 0.3s ease;
+            align-self: center;
+        }
+
+        .swap-btn:hover {
+            background: #131357;
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #333;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .last-updated {
+            text-align: center;
+            color: #777;
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            input, select, .swap-btn {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px">
+          <img src="../assets/logo.png" alt="SimHireEstate" style="height:28px; width:auto"/>
+        </div>
+        <h1>SimHireEstate Currency Converter </h1>
+        <div class="converter">
+            <div class="input-group">
+                <label for="amount">Amount</label>
+                <input type="number" id="amount" placeholder="Enter amount" value="1" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="from-currency">From</label>
+                <select id="from-currency"></select>
+            </div>
+            <button class="swap-btn" onclick="swapCurrencies()">Swap</button>
+            <div class="input-group">
+                <label for="to-currency">To</label>
+                <select id="to-currency"></select>
+            </div>
+        </div>
+        <div class="result" id="result"></div>
+        <div class="error" id="error"></div>
+        <div class="last-updated" id="last-updated"></div>
+    </div>
+
+    <script>
+        const apiKey = 'c5f524e323378439dad2a43f'; // Get free key from https://www.exchangerate-api.com
+        const fromCurrency = document.getElementById('from-currency');
+        const toCurrency = document.getElementById('to-currency');
+        const amountInput = document.getElementById('amount');
+        const resultDiv = document.getElementById('result');
+        const errorDiv = document.getElementById('error');
+        const lastUpdatedDiv = document.getElementById('last-updated');
+
+        let currencies = [];
+
+        // Fetch all supported currencies
+        async function fetchCurrencies() {
+            try {
+                const response = await fetch(`https://v6.exchangerate-api.com/v6/${apiKey}/codes`);
+                const data = await response.json();
+                if (data.result === 'success') {
+                    currencies = data.supported_codes;
+                    populateDropdowns();
+                } else {
+                    showError('Failed to load currencies');
+                }
+            } catch (error) {
+                showError('Error fetching currency data');
+            }
+        }
+
+        // Populate currency dropdowns with all currencies
+        function populateDropdowns() {
+            fromCurrency.innerHTML = '';
+            toCurrency.innerHTML = '';
+            currencies.forEach(([code, name]) => {
+                const option1 = new Option(`${code} - ${name}`, code);
+                const option2 = new Option(`${code} - ${name}`, code);
+                fromCurrency.add(option1);
+                toCurrency.add(option2);
+            });
+            // Set default currencies
+            fromCurrency.value = 'USD';
+            toCurrency.value = 'EUR';
+            convertCurrency();
+        }
+
+        // Convert currency with real-time rates
+        async function convertCurrency() {
+            const amount = parseFloat(amountInput.value);
+            const from = fromCurrency.value;
+            const to = toCurrency.value;
+
+            if (isNaN(amount) || amount <= 0) {
+                showError('Please enter a valid amount');
+                resultDiv.textContent = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://v6.exchangerate-api.com/v6/${apiKey}/pair/${from}/${to}/${amount}`
+                );
+                const data = await response.json();
+                if (data.result === 'success') {
+                    const convertedAmount = data.conversion_result.toFixed(2);
+                    resultDiv.textContent = `${amount.toFixed(2)} ${from} = ${convertedAmount} ${to}`;
+                    lastUpdatedDiv.textContent = `Last updated: ${new Date(data.time_last_update_utc).toLocaleString()}`;
+                    errorDiv.textContent = '';
+                } else {
+                    showError('Conversion failed');
+                }
+            } catch (error) {
+                showError('Error fetching conversion data');
+            }
+        }
+
+        // Swap currencies
+        function swapCurrencies() {
+            const temp = fromCurrency.value;
+            fromCurrency.value = toCurrency.value;
+            toCurrency.value = temp;
+            convertCurrency();
+        }
+
+        // Show error message
+        function showError(message) {
+            errorDiv.textContent = message;
+            resultDiv.textContent = '';
+            lastUpdatedDiv.textContent = '';
+        }
+
+        // Debounce function to limit API calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Event listeners with debouncing
+        amountInput.addEventListener('input', debounce(convertCurrency, 500));
+        fromCurrency.addEventListener('change', convertCurrency);
+        toCurrency.addEventListener('change', convertCurrency);
+
+        // Initialize
+        fetchCurrencies();
+    </script>
+</body>
+</html>

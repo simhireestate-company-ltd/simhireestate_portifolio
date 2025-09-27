@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>File Encryption / Decryption (AES) — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { primary: '#063F5E', secondary: '#1a1a69', gray: '#6B7280' } } } } };
+  </script>
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    html{scroll-behavior:smooth}
+    code{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:0 6px}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-white text-slate-800">
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-100">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <a href="../index.html" class="flex items-center gap-2"><img src="../assets/logo.png" class="h-8" alt="logo"><span class="font-semibold" style="color:var(--brand-primary)">SimHireEstate</span></a>
+      <a href="../projects.html" class="text-sm hover:text-brand-secondary">Back to Projects</a>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <section class="bg-gradient-to-br from-brand-primary to-brand-secondary text-white">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 class="text-2xl font-bold">File Encryption / Decryption (AES-GCM)</h1>
+        <p class="text-slate-100">Encrypt and decrypt files in your browser using a password. No upload.</p>
+      </div>
+    </section>
+
+    <section class="py-8">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="p-5 bg-white border border-slate-200 rounded-lg space-y-4">
+          <div class="grid sm:grid-cols-2 gap-3">
+            <label class="text-sm">Select file
+              <input id="file" type="file" class="mt-1 w-full"/>
+            </label>
+            <label class="text-sm">Password
+              <input id="password" type="password" class="mt-1 w-full border border-slate-200 rounded-md px-2 py-1"/>
+            </label>
+          </div>
+          <div class="flex gap-2">
+            <button id="encrypt" class="px-3 py-2 rounded-md text-white" style="background:var(--brand-secondary)">Encrypt</button>
+            <button id="decrypt" class="px-3 py-2 rounded-md border border-slate-200">Decrypt</button>
+          </div>
+          <div id="msg" class="text-sm text-slate-600"></div>
+          <p class="text-xs text-slate-500">Uses Web Crypto API (AES-GCM, PBKDF2). Output format: <code>salt(16b) + iv(12b) + data</code>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-100">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-slate-600 flex items-center justify-between">
+      <span>© <span id="year"></span> SimHireEstate</span>
+      <a class="hover:text-brand-secondary" href="../contact.html">Contact</a>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const fileEl = document.getElementById('file');
+    const passEl = document.getElementById('password');
+    const msg = document.getElementById('msg');
+
+    function bufToHex(buf){ return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+    function concatBuf(a,b){
+      const out = new Uint8Array(a.byteLength + b.byteLength);
+      out.set(new Uint8Array(a), 0); out.set(new Uint8Array(b), a.byteLength);
+      return out.buffer;
+    }
+
+    async function deriveKey(password, salt){
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey(
+        { name:'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+        keyMaterial,
+        { name:'AES-GCM', length:256 },
+        false,
+        ['encrypt','decrypt']
+      );
+    }
+
+    async function encryptFile(){
+      const file = fileEl.files?.[0]; const password = passEl.value;
+      if(!file || !password){ msg.textContent = 'Select a file and enter password.'; return; }
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveKey(password, salt);
+      const data = await file.arrayBuffer();
+      const encData = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, data);
+      const out = concatBuf(salt.buffer, concatBuf(iv.buffer, encData));
+      const blob = new Blob([out], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = file.name + '.enc'; a.click();
+      URL.revokeObjectURL(url);
+      msg.textContent = 'Encrypted. Keep your password safe!';
+    }
+
+    async function decryptFile(){
+      const file = fileEl.files?.[0]; const password = passEl.value;
+      if(!file || !password){ msg.textContent = 'Select an encrypted file and enter password.'; return; }
+      const buf = await file.arrayBuffer();
+      const salt = buf.slice(0,16);
+      const iv = buf.slice(16,28);
+      const data = buf.slice(28);
+      const key = await deriveKey(password, new Uint8Array(salt));
+      try{
+        const dec = await crypto.subtle.decrypt({ name:'AES-GCM', iv: new Uint8Array(iv) }, key, data);
+        const blob = new Blob([dec]);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = (file.name.endsWith('.enc') ? file.name.slice(0,-4) : 'decrypted.bin'); a.click();
+        URL.revokeObjectURL(url);
+        msg.textContent = 'Decrypted successfully.';
+      }catch(e){ msg.textContent = 'Failed to decrypt. Check password/file.'; console.warn(e); }
+    }
+
+    document.getElementById('encrypt').addEventListener('click', encryptFile);
+    document.getElementById('decrypt').addEventListener('click', decryptFile);
+  </script>
+</body>
+</html>

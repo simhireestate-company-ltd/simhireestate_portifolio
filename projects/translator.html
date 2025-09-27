@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — Translator (EN ↔ FR ↔ RW)</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    *{ box-sizing: border-box; }
+    body{ margin:0; font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background:#f8fafc; color:#0f172a; }
+    header{ position:sticky; top:0; z-index:10; background:#fff; border-bottom:1px solid #e5e7eb; }
+    .wrap{ max-width: 1100px; margin:0 auto; padding:16px; }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .brand span{ color:var(--brand-primary); font-weight:600; }
+    .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; }
+    .grid{ display:grid; gap:16px; }
+    @media(min-width:768px){ .grid-2{ grid-template-columns:1fr 1fr; } }
+
+    h1{ font-size:1.5rem; margin:12px 0 4px; color:#0f172a; }
+    h2{ font-size:1.1rem; margin:0 0 8px; color:#0f172a; }
+    label{ font-size:.9rem; color:#334155; }
+
+    input, select, textarea, button{ font:inherit; }
+    textarea, select, input{ width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; }
+    textarea{ min-height:120px; resize:vertical; }
+    textarea:focus, select:focus, input:focus{ outline:none; border-color:var(--brand-secondary); }
+
+    .btn{ padding:10px 14px; border-radius:8px; border:1px solid transparent; cursor:pointer; }
+    .btn-primary{ background:var(--brand-secondary); color:#fff; }
+    .btn-ghost{ background:#fff; border-color:#e5e7eb; }
+
+    .muted{ color:#64748b; font-size:.9rem; }
+
+    .result{ white-space:pre-wrap; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:12px; min-height:120px; }
+
+    .controls{ display:flex; gap:8px; flex-wrap:wrap; }
+
+    @media print{ header, .controls { display:none !important; } body{ background:#fff; } .card{ border:none; padding:0; } .wrap{ max-width:100%; padding:0 12px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; height:64px;">
+      <a href="../projects.html" class="brand" title="Back to Projects">
+        <img src="../assets/logo.png" alt="SimHireEstate" style="height:28px; width:auto" />
+        <span>SimHireEstate</span>
+      </a>
+      <div class="muted">Translator (EN ↔ FR ↔ RW)</div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding-top:18px; padding-bottom:28px;">
+    <section class="card">
+      <h2>Translate</h2>
+      <div class="grid grid-2">
+        <div>
+          <label for="fromLang">From</label>
+          <select id="fromLang">
+            <option value="en">English (EN)</option>
+            <option value="fr">French (FR)</option>
+            <option value="rw" selected>Kinyarwanda (RW)</option>
+          </select>
+        </div>
+        <div>
+          <label for="toLang">To</label>
+          <select id="toLang">
+            <option value="en" selected>English (EN)</option>
+            <option value="fr">French (FR)</option>
+            <option value="rw">Kinyarwanda (RW)</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1;">
+          <label for="inputText">Text</label>
+          <textarea id="inputText" placeholder="Type text to translate..."></textarea>
+        </div>
+      </div>
+      <div class="controls" style="margin-top:12px;">
+        <button class="btn btn-primary" id="translateBtn">Translate</button>
+        <button class="btn btn-ghost" id="swapBtn">Swap</button>
+        <button class="btn btn-ghost" id="copyBtn">Copy Result</button>
+        <button class="btn btn-ghost" id="clearBtn">Clear</button>
+        <button class="btn btn-ghost" id="printBtn">Print</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <h2>Result</h2>
+      <div id="result" class="result"></div>
+      <p class="muted" style="margin-top:8px;">Offline dictionary-based translation. For phrases not found, words are translated individually.</p>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <h2>Dictionary Coverage</h2>
+      <p class="muted">Sample built-in dictionary for common words and phrases. You can extend it in code later.</p>
+      <div id="dictStats" class="muted"></div>
+    </section>
+  </main>
+
+  <script>
+    // Base tri-lingual dictionary entries. Each item contains en, fr, rw.
+    const DICT = [
+      { en:'hello', fr:'bonjour', rw:'muraho' },
+      { en:'hi', fr:'salut', rw:'bite' },
+      { en:'good morning', fr:'bonjour', rw:'mwaramutse' },
+      { en:'good evening', fr:'bonsoir', rw:'mwariramutsa' },
+      { en:'good night', fr:'bonne nuit', rw:'muramuke' },
+      { en:'how are you', fr:'comment ça va', rw:'amakuru yawe' },
+      { en:'thank you', fr:'merci', rw:'urakoze' },
+      { en:'please', fr:'s’il vous plaît', rw:'nyamuneka' },
+      { en:'yes', fr:'oui', rw:'yego' },
+      { en:'no', fr:'non', rw:'oya' },
+      { en:'goodbye', fr:'au revoir', rw:'murabeho' },
+      { en:'house', fr:'maison', rw:'inzu' },
+      { en:'work', fr:'travail', rw:'akazi' },
+      { en:'job', fr:'emploi', rw:'akazi' },
+      { en:'student', fr:'étudiant', rw:'umunyeshuri' },
+      { en:'teacher', fr:'enseignant', rw:'umwarimu' },
+      { en:'water', fr:'eau', rw:'amazi' },
+      { en:'food', fr:'nourriture', rw:'ibiryo' },
+      { en:'money', fr:'argent', rw:'amafaranga' },
+      { en:'market', fr:'marché', rw:'isoko' },
+      { en:'hospital', fr:'hôpital', rw:'ibitaro' },
+      { en:'school', fr:'école', rw:'ishuri' },
+      { en:'office', fr:'bureau', rw:'ofisi' },
+      { en:'family', fr:'famille', rw:'umuryango' },
+      { en:'friend', fr:'ami', rw:'inshuti' },
+      { en:'love', fr:'amour', rw:'urukundo' },
+      { en:'computer', fr:'ordinateur', rw:'mudasobwa' },
+      { en:'phone', fr:'téléphone', rw:'telefoni' },
+      { en:'car', fr:'voiture', rw:'imodoka' },
+      { en:'bus', fr:'bus', rw:'bisi' },
+      { en:'city', fr:'ville', rw:'umujyi' },
+      { en:'country', fr:'pays', rw:'igihugu' },
+      { en:'people', fr:'gens', rw:'abantu' },
+      { en:'today', fr:'aujourd\'hui', rw:'uyu munsi' },
+      { en:'tomorrow', fr:'demain', rw:'ejo' },
+      { en:'yesterday', fr:'hier', rw:'ejo hashize' },
+      { en:'I am fine', fr:"je vais bien", rw:'meze neza' },
+      { en:'what is your name', fr:'comment vous appelez-vous', rw:'witwa nde' },
+      { en:'my name is', fr:"je m\'appelle", rw:'nitwa' },
+      { en:'where are you', fr:'où es-tu', rw:'uri he' },
+      { en:'I need help', fr:"j\'ai besoin d\'aide", rw:'nkeneye ubufasha' },
+    ];
+
+    // Small persistent cache for online lookups
+    const CACHE_KEY = 'translatorCacheV1';
+    let CACHE = {};
+    try { CACHE = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch(e){ CACHE = {}; }
+    function getCache(src, dst, term){ return CACHE?.[src]?.[dst]?.[term]; }
+    function setCache(src, dst, term, value){
+      CACHE[src] = CACHE[src] || {}; CACHE[src][dst] = CACHE[src][dst] || {}; CACHE[src][dst][term] = value;
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE)); } catch(e){}
+    }
+
+    const fromLang = document.getElementById('fromLang');
+    const toLang = document.getElementById('toLang');
+    const inputText = document.getElementById('inputText');
+    const result = document.getElementById('result');
+
+    // Inject minimal UI for online fallback and status
+    const controls = document.querySelector('.controls');
+    controls.insertAdjacentHTML('beforeend', '<label class="muted" style="display:flex; align-items:center; gap:6px;">\
+      <input type="checkbox" id="onlineToggle" /> Use online fallback</label>');
+    const onlineToggle = document.getElementById('onlineToggle');
+
+    const statusElContainer = document.querySelector('#result').parentElement;
+    const statusEl = document.createElement('div');
+    statusEl.id = 'status'; statusEl.className = 'muted'; statusEl.style.marginTop = '6px';
+    statusEl.textContent = '';
+    statusElContainer.appendChild(statusEl);
+
+    document.getElementById('translateBtn').addEventListener('click', ()=> doTranslate());
+    document.getElementById('swapBtn').addEventListener('click', ()=>{ const a=fromLang.value; fromLang.value=toLang.value; toLang.value=a; doTranslate(); });
+    document.getElementById('clearBtn').addEventListener('click', ()=>{ inputText.value=''; result.textContent=''; statusEl.textContent=''; });
+    document.getElementById('copyBtn').addEventListener('click', ()=>{ navigator.clipboard.writeText(result.textContent||''); alert('Copied'); });
+    document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+    function normalize(s){ return String(s).trim().toLowerCase(); }
+    function capitalizeLike(src, out){
+      if (!src) return out;
+      if (src.toUpperCase() === src) return out.toUpperCase();
+      if (src[0] === src[0].toUpperCase()) return out.charAt(0).toUpperCase()+out.slice(1);
+      return out;
+    }
+
+    // Build index for fast lookup per language from base + extra + cache
+    const IDX = { en:new Map(), fr:new Map(), rw:new Map() };
+    function rebuildIndex(extra = []){
+      IDX.en.clear(); IDX.fr.clear(); IDX.rw.clear();
+      const rows = DICT.concat(extra);
+      for (const row of rows){ for (const k of ['en','fr','rw']) IDX[k].set(normalize(row[k]), row); }
+    }
+
+    // Load extra offline dictionary
+    let EXTRA_DICT = [];
+    async function loadExtraDict(){
+      try {
+        const res = await fetch('../assets/projects/translator_dict.json', { cache: 'no-store' });
+        if (res.ok){
+          const data = await res.json();
+          if (Array.isArray(data)) EXTRA_DICT = data;
+        }
+      } catch(e) { /* ignore offline errors */ }
+      rebuildIndex(EXTRA_DICT);
+    }
+
+    // Online translation (public API). Falls back gracefully.
+    async function onlineTranslateSingle(term, src, dst){
+      const iso = { en:'en', fr:'fr', rw:'rw' };
+      const s = iso[src], d = iso[dst];
+      if (!s || !d) return null;
+      // Cache first
+      const key = normalize(term);
+      const cached = getCache(src, dst, key);
+      if (cached) return cached;
+      try {
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(term)}&langpair=${encodeURIComponent(s)}|${encodeURIComponent(d)}`;
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('net');
+        const j = await r.json();
+        let out = j?.responseData?.translatedText || '';
+        if (out){ setCache(src, dst, key, out); return out; }
+      } catch(e){ return null; }
+      return null;
+    }
+
+    async function doTranslate(){
+      const src = fromLang.value; const dst = toLang.value;
+      const text = inputText.value || '';
+      statusEl.textContent = '';
+      if (!text.trim()){ result.textContent=''; return; }
+
+      const tokens = tokenize(text);
+      const out = [];
+      let onlineCalls = 0; const ONLINE_LIMIT = 10; let onlineUsed = false; let onlineMiss = false;
+
+      for (let i=0;i<tokens.length;){
+        // Try phrase match up to 3 tokens
+        let matched = false;
+        for (let span=3; span>=1; span--){
+          if (i+span-1 >= tokens.length) continue;
+          const slice = tokens.slice(i, i+span);
+          if (!slice.every(t => t.type==='word')) continue;
+          const phrase = normalize(slice.map(t=>t.value).join(' '));
+          const row = IDX[src].get(phrase);
+          if (row){
+            const sourceText = slice.map(t=>t.value).join(' ');
+            const translated = row[dst];
+            out.push(capitalizeLike(sourceText, translated));
+            i += span; matched = true; break;
+          }
+        }
+        if (!matched){
+          const t = tokens[i];
+          if (t.type==='word'){
+            const key = normalize(t.value);
+            let translated;
+            const row = IDX[src].get(key);
+            if (row){
+              translated = row[dst];
+            } else if (onlineToggle.checked && onlineCalls < ONLINE_LIMIT){
+              // Try online for single words only
+              translated = await onlineTranslateSingle(t.value, src, dst);
+              onlineCalls++; onlineUsed = onlineUsed || !!translated; onlineMiss = onlineMiss || !translated;
+              if (!translated) translated = t.value; // keep original if miss
+            } else {
+              translated = t.value; // fallback
+            }
+            out.push(capitalizeLike(t.value, translated));
+          } else {
+            out.push(t.value);
+          }
+          i++;
+        }
+      }
+      result.textContent = out.join('');
+      if (onlineToggle.checked){
+        if (onlineUsed && !onlineMiss) statusEl.textContent = 'Used online fallback for some words (provider: MyMemory).';
+        else if (onlineUsed && onlineMiss) statusEl.textContent = 'Online fallback partially used; some terms not found.';
+        else statusEl.textContent = 'No online lookup needed.';
+      }
+    }
+
+    function tokenize(s){
+      // Split into word and non-word tokens, keep delimiters
+      const re = /([A-Za-zÀ-ÖØ-öø-ÿ’']+)|([^A-Za-zÀ-ÖØ-öø-ÿ’']+)/g; // include French accents and apostrophes
+      const out = []; let m;
+      while ((m = re.exec(s))){ out.push({ type: m[1] ? 'word' : 'sep', value: m[1] || m[2] }); }
+      return out;
+    }
+
+    // Show dictionary stats
+    (async function(){
+      await loadExtraDict();
+      const s = new Set(); DICT.concat(EXTRA_DICT).forEach(r=>{ s.add(r.en); s.add(r.fr); s.add(r.rw); });
+      document.getElementById('dictStats').textContent = `Entries: ${DICT.length + EXTRA_DICT.length} | Words total: ${s.size}`;
+    })();
+  </script>
+</body>
+</html>

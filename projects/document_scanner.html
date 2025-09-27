@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — Document Scanner</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    *{ box-sizing: border-box; }
+    body{ margin:0; font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background:#f8fafc; color:#0f172a; }
+    header{ position:sticky; top:0; z-index:10; background:#fff; border-bottom:1px solid #e5e7eb; }
+    .wrap{ max-width: 1100px; margin:0 auto; padding:16px; }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .brand span{ color:var(--brand-primary); font-weight:600; }
+    .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; }
+    .grid{ display:grid; gap:16px; }
+    @media(min-width:768px){ .grid-2{ grid-template-columns:1fr 1fr; } }
+    .btn{ padding:9px 12px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; }
+    .btn-primary{ background:var(--brand-secondary); color:#fff; border-color:transparent; }
+    .muted{ color:#64748b; font-size:.9rem; }
+    .preview{ width:100%; max-height:520px; object-fit:contain; border:1px solid #e5e7eb; border-radius:8px; background:#fff; }
+    textarea, input[type="text"]{ width:100%; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; }
+    @media print{ header, .controls, #pdfEditorWrap { display:none !important; } body{ background:#fff; } .card{ border:none; padding:0; } .wrap{ max-width:100%; padding:0 12px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; height:64px;">
+      <a href="../projects.html" class="brand" title="Back to Projects">
+        <img src="../assets/logo.png" alt="SimHireEstate" style="height:28px; width:auto" />
+        <span>SimHireEstate</span>
+      </a>
+      <div class="muted">Document Scanner</div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding-top:16px; padding-bottom:24px;">
+    <section class="card">
+      <div class="grid grid-2">
+        <div>
+          <h2>1) Upload Image or PDF</h2>
+          <input type="file" id="fileInput" accept="image/*,application/pdf" />
+          <p class="muted" style="margin-top:8px">Images: will be previewed and processed. PDFs: first page is rendered and text can be extracted for editing.</p>
+
+          <div class="controls" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn" id="btnBW">Black & White</button>
+            <button class="btn" id="btnGray">Grayscale</button>
+            <button class="btn" id="btnContrast">Increase Contrast</button>
+            <button class="btn" id="btnSharpen">Sharpen</button>
+            <button class="btn" id="btnDeskew">Auto Deskew</button>
+            <button class="btn" id="btnClear">Reset</button>
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button class="btn btn-primary" id="btnDownload">Download Image</button>
+            <button class="btn" id="btnPrint">Print</button>
+            <span class="muted">| PDF Text Tools:</span>
+            <button class="btn" id="btnPdfExtract" disabled>Extract PDF Text</button>
+            <button class="btn" id="btnPdfEdit" disabled>Open Text Editor</button>
+            <button class="btn" id="btnPdfSave" disabled>Export PDF</button>
+            <button class="btn" id="btnDocSave" disabled>Export DOC</button>
+          </div>
+
+          <div id="pdfEditorWrap" style="display:none; margin-top:10px;">
+            <label class="muted">PDF Text (editable)</label>
+            <textarea id="pdfEditor" style="min-height:220px;" placeholder="Extract PDF text first or paste your content..."></textarea>
+          </div>
+        </div>
+        <div>
+          <h2>2) Preview & Edit</h2>
+          <canvas id="canvas" class="preview" width="1200" height="800"></canvas>
+          <p class="muted" style="margin-top:8px">Use the tools to clean the document or load a PDF and edit its text. Exports are frontend-only.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- PDF.js (for reading PDF) and jsPDF (for exporting text back to PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.min.js" integrity="sha512-+P9kYwM3+z7oR9zj1Hokl1R8fX1Xg4yq8gQ2+YcQd3pJYJt6T2uXb3O2Ki9E9i6Jg2o0wH1zQ1Q9gFJm1w4eBA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-Yk8xQ8j2X7Jm7zTBQpQq5jLr3rG8Z6G7m9h9M3o3E6v0Yw1bL9XJbQ5Yy1Q6qC8s9w1P6bV0v8kVt5h6M5b8wQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const fileInput = document.getElementById('fileInput');
+
+    // Image processing state
+    let originalImage = null; // ImageData snapshot
+
+    // PDF state
+    let pdfDoc = null; // pdfjs loaded document
+    let pdfUrl = null; // object URL for current pdf
+    let pdfText = '';
+
+    // PDF controls
+    const btnPdfExtract = document.getElementById('btnPdfExtract');
+    const btnPdfEdit = document.getElementById('btnPdfEdit');
+    const btnPdfSave = document.getElementById('btnPdfSave');
+    const btnDocSave = document.getElementById('btnDocSave');
+    const pdfEditorWrap = document.getElementById('pdfEditorWrap');
+    const pdfEditor = document.getElementById('pdfEditor');
+
+    function enablePdfTools(en){
+      btnPdfExtract.disabled = !en; btnPdfEdit.disabled = !en; btnPdfSave.disabled = !en; btnDocSave.disabled = !en;
+    }
+
+    function drawImageToCanvas(img){
+      // Fit image inside canvas while keeping aspect ratio
+      const maxW = canvas.width, maxH = canvas.height;
+      const ratio = Math.min(maxW / img.width, maxH / img.height);
+      const w = Math.floor(img.width * ratio);
+      const h = Math.floor(img.height * ratio);
+      const x = Math.floor((maxW - w)/2);
+      const y = Math.floor((maxH - h)/2);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img, x, y, w, h);
+      originalImage = ctx.getImageData(0,0,canvas.width,canvas.height);
+    }
+
+    function loadImageFromFile(file){
+      return new Promise((resolve, reject)=>{
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = ()=>{ resolve(img); URL.revokeObjectURL(url); };
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    fileInput.addEventListener('change', async (e)=>{
+      const file = e.target.files?.[0]; if (!file) return;
+      pdfDoc = null; pdfUrl = null; pdfText = ''; pdfEditorWrap.style.display='none'; enablePdfTools(false);
+
+      if (file.type.startsWith('image/')){
+        const img = await loadImageFromFile(file);
+        // Reset canvas size for image area
+        canvas.width = 1200; canvas.height = 800;
+        drawImageToCanvas(img);
+      } else if (file.type === 'application/pdf'){
+        try{
+          pdfUrl = URL.createObjectURL(file);
+          // Required config for worker (use same CDN path)
+          if (!window['pdfjsLib']?.GlobalWorkerOptions?.workerSrc){
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.worker.min.js';
+          }
+          const loadingTask = pdfjsLib.getDocument(pdfUrl);
+          pdfDoc = await loadingTask.promise;
+          const page = await pdfDoc.getPage(1);
+          const viewport = page.getViewport({ scale: 1.5 });
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          const renderContext = { canvasContext: ctx, viewport };
+          await page.render(renderContext).promise;
+          originalImage = ctx.getImageData(0,0,canvas.width,canvas.height);
+          enablePdfTools(true);
+        } catch(err){
+          alert('Unable to open PDF in browser. You can still convert it to text using Extract PDF Text.');
+          enablePdfTools(true);
+        }
+      }
+    });
+
+    async function extractPdfText(){
+      if (!pdfDoc){ return alert('Load a PDF first'); }
+      const parts = [];
+      for (let p=1; p<=pdfDoc.numPages; p++){
+        const page = await pdfDoc.getPage(p);
+        const textContent = await page.getTextContent();
+        const strings = textContent.items.map(it => it.str);
+        parts.push(strings.join(' '));
+      }
+      pdfText = parts.join('\n\n--- Page Break ---\n\n');
+      pdfEditor.value = pdfText;
+      pdfEditorWrap.style.display = 'block';
+      alert('Text extracted. You can edit it and export as PDF or DOC.');
+    }
+
+    function exportEditorToPDF(){
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:'pt', format:'a4' });
+      const margin = 40; const maxWidth = doc.internal.pageSize.getWidth() - margin*2;
+      const text = pdfEditor.value || '';
+      const lines = doc.splitTextToSize(text, maxWidth);
+      let y = margin; const lineHeight = 16; const pageHeight = doc.internal.pageSize.getHeight();
+      for (const line of lines){
+        if (y > pageHeight - margin){ doc.addPage(); y = margin; }
+        doc.text(line, margin, y); y += lineHeight;
+      }
+      doc.save('edited.pdf');
+    }
+
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    function exportEditorToDOC(){
+      const html = '<html><head><meta charset="utf-8"></head><body>' +
+                   '<pre style="font-family:Arial, sans-serif; white-space:pre-wrap;">' +
+                   escapeHtml(pdfEditor.value || '') + '</pre></body></html>';
+      const blob = new Blob([html], { type:'application/msword' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'edited.doc'; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    btnPdfExtract.onclick = extractPdfText;
+    btnPdfEdit.onclick = ()=>{ pdfEditorWrap.style.display = 'block'; if (!pdfEditor.value) pdfEditor.value = pdfText || ''; };
+    btnPdfSave.onclick = exportEditorToPDF;
+    btnDocSave.onclick = exportEditorToDOC;
+
+    function applyFilter(transform){
+      if (!originalImage) return;
+      const img = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const d = img.data;
+      for (let i=0;i<d.length;i+=4){
+        const r=d[i], g=d[i+1], b=d[i+2], a=d[i+3];
+        const out = transform(r,g,b,a);
+        d[i]=out[0]; d[i+1]=out[1]; d[i+2]=out[2]; d[i+3]=out[3];
+      }
+      ctx.putImageData(img,0,0);
+    }
+
+    document.getElementById('btnBW').onclick = ()=> applyFilter((r,g,b,a)=>{
+      const v = (0.2126*r + 0.7152*g + 0.0722*b);
+      const t = v > 140 ? 255 : 0;
+      return [t,t,t,a];
+    });
+    document.getElementById('btnGray').onclick = ()=> applyFilter((r,g,b,a)=>{
+      const v = (0.2126*r + 0.7152*g + 0.0722*b);
+      return [v,v,v,a];
+    });
+    document.getElementById('btnContrast').onclick = ()=> applyFilter((r,g,b,a)=>{
+      const factor = (259*(128+255))/(255*(259-128));
+      function adj(x){ return Math.max(0, Math.min(255, factor*(x-128)+128)); }
+      return [adj(r), adj(g), adj(b), a];
+    });
+    document.getElementById('btnSharpen').onclick = ()=>{
+      // Simple unsharp mask-like convolution
+      const src = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const w=src.width,h=src.height; const out = ctx.createImageData(w,h);
+      const s=src.data, d=out.data;
+      for(let y=1;y<h-1;y++){
+        for(let x=1;x<w-1;x++){
+          for(let c=0;c<3;c++){
+            let sum=0, idx=(y*w+x)*4+c;
+            sum += s[idx-4-w*4]; sum -= s[idx-w*4]; sum += s[idx+4-w*4];
+            sum -= s[idx-4];     sum += 5*s[idx];   sum -= s[idx+4];
+            sum += s[idx-4+w*4]; sum -= s[idx+w*4]; sum += s[idx+4+w*4];
+            d[(y*w+x)*4+c]=Math.max(0,Math.min(255,sum));
+          }
+          d[(y*w+x)*4+3]=s[(y*w+x)*4+3];
+        }
+      }
+      ctx.putImageData(out,0,0);
+    };
+    document.getElementById('btnDeskew').onclick = ()=>{
+      // Heuristic: draw a frame and increase contrast to simulate clarity
+      ctx.strokeStyle = '#00000022'; ctx.lineWidth = 2; ctx.strokeRect(10,10,canvas.width-20,canvas.height-20);
+      document.getElementById('btnContrast').click();
+    };
+    document.getElementById('btnClear').onclick = ()=>{ if (originalImage) ctx.putImageData(originalImage,0,0); };
+
+    document.getElementById('btnDownload').onclick = ()=>{
+      const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = 'scanned.png'; a.click();
+    };
+    document.getElementById('btnPrint').onclick = ()=> window.print();
+  </script>
+</body>
+</html>

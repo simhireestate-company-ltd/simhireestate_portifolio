@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Typing Speed Test — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { primary: '#063F5E', secondary: '#1a1a69', gray: '#6B7280' } } } } } };
+  </script>
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    html{scroll-behavior:smooth}
+    .good { color:#16A34A }
+    .bad { color:#DC2626 }
+    .pending { color:#9CA3AF }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body class="min-h-screen bg-white text-slate-800">
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <a href="../projects.html" class="text-sm text-brand-secondary hover:underline">← Back to Projects</a>
+      <img src="../assets/logo.png" alt="SimHireEstate" class="h-8 w-auto" />
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-2xl font-bold" style="color: var(--brand-primary)">Typing Speed Test</h1>
+    <p class="mt-1 text-slate-600 text-sm">Type the given text. We track WPM and accuracy. Improve your speed and precision!</p>
+
+    <div class="mt-4 flex gap-3 items-center">
+      <button id="start" class="px-4 py-2 rounded-md text-white" style="background: var(--brand-secondary)">Start</button>
+      <button id="reset" class="px-4 py-2 rounded-md border border-slate-200">Reset</button>
+      <button id="change" class="px-4 py-2 rounded-md border border-slate-200">Change Text</button>
+      <span class="text-xs text-slate-500">Best: <span id="best">—</span> WPM</span>
+    </div>
+
+    <div class="mt-4 p-4 border border-slate-200 rounded-lg bg-white">
+      <div class="text-xs text-slate-500 mb-1">Target Text</div>
+      <div id="target" class="mono text-sm leading-7"></div>
+    </div>
+
+    <div class="mt-3">
+      <textarea id="input" rows="4" class="w-full border border-slate-200 rounded-md p-3 mono" placeholder="Start test to enable typing" disabled></textarea>
+    </div>
+
+    <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+      <div class="p-3 border border-slate-200 rounded-lg">
+        <div class="text-xs text-slate-500">Time</div>
+        <div id="time" class="text-xl font-semibold">0.0s</div>
+      </div>
+      <div class="p-3 border border-slate-200 rounded-lg">
+        <div class="text-xs text-slate-500">WPM</div>
+        <div id="wpm" class="text-xl font-semibold">0</div>
+      </div>
+      <div class="p-3 border border-slate-200 rounded-lg">
+        <div class="text-xs text-slate-500">Accuracy</div>
+        <div id="acc" class="text-xl font-semibold">100%</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-100 mt-10">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-slate-600 flex items-center justify-between">
+      <span>© <span id="year"></span> SimHireEstate</span>
+      <a href="../contact.html" class="hover:text-brand-secondary">Contact</a>
+    </div>
+  </footer>
+
+  <script>
+    const el = id => document.getElementById(id);
+    el('year').textContent = new Date().getFullYear();
+
+    const samples = [
+      'Practice makes perfect. Keep typing to improve your speed and accuracy.',
+      'Success is the sum of small efforts repeated day in and day out.',
+      'Typing fast is useful for students, job seekers, and professionals alike.',
+      'Measure your words per minute and track your progress over time.'
+    ];
+
+    function pickSample(){ return samples[Math.floor(Math.random()*samples.length)]; }
+
+    let target = pickSample();
+    let startTime = null;
+    let timer = null;
+    let best = parseFloat(localStorage.getItem('typing_best_wpm')||'0') || 0;
+    el('best').textContent = best ? best.toFixed(0) : '—';
+
+    function renderTarget(){
+      const chars = target.split('').map((ch,i)=>`<span id="c${i}" class="pending">${ch === ' ' ? '&nbsp;' : ch}</span>`).join('');
+      el('target').innerHTML = chars;
+    }
+
+    function reset(){
+      target = pickSample();
+      renderTarget();
+      el('input').value = '';
+      el('input').setAttribute('disabled','');
+      el('time').textContent = '0.0s';
+      el('wpm').textContent = '0';
+      el('acc').textContent = '100%';
+      startTime = null;
+      if(timer) clearInterval(timer);
+    }
+
+    function start(){
+      renderTarget();
+      el('input').removeAttribute('disabled');
+      el('input').focus();
+      startTime = Date.now();
+      if(timer) clearInterval(timer);
+      timer = setInterval(updateStats, 100);
+    }
+
+    function updateStats(){
+      if(!startTime) return;
+      const typed = el('input').value;
+      const now = Date.now();
+      const elapsedSec = (now - startTime) / 1000;
+      el('time').textContent = (elapsedSec).toFixed(1) + 's';
+
+      // Mark correctness
+      let correct = 0; let total = Math.max(target.length, typed.length);
+      for(let i=0;i<target.length;i++){
+        const span = document.getElementById('c'+i);
+        const ch = typed[i];
+        if(ch == null){ span.className = 'pending'; continue; }
+        if(ch === target[i]){ span.className = 'good'; correct++; } else { span.className = 'bad'; }
+      }
+
+      const words = correct / 5; // standard WPM char divisor
+      const minutes = elapsedSec / 60;
+      const wpm = minutes > 0 ? Math.max(0, Math.round(words / minutes)) : 0;
+      el('wpm').textContent = wpm.toString();
+
+      // Accuracy
+      const acc = total > 0 ? Math.max(0, Math.round((correct / total) * 100)) : 100;
+      el('acc').textContent = acc + '%';
+
+      // Finished?
+      if(typed === target){
+        clearInterval(timer);
+        if(wpm > best){
+          best = wpm;
+          localStorage.setItem('typing_best_wpm', String(best));
+          el('best').textContent = best.toFixed(0);
+        }
+        el('input').setAttribute('disabled','');
+      }
+    }
+
+    el('input').addEventListener('input', updateStats);
+    el('start').addEventListener('click', start);
+    el('reset').addEventListener('click', reset);
+    el('change').addEventListener('click', ()=>{ target = pickSample(); renderTarget(); el('input').value=''; el('input').focus(); });
+
+    // Initialize
+    reset();
+  </script>
+</body>
+</html>

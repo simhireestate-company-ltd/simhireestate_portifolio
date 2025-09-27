@@ -1,0 +1,146 @@
+[
+  {
+    "id": 101,
+    "title": "Vegetable Pilau Rice",
+    "category": "Vegetarian",
+    "tags": ["rice", "spiced"],
+    "ingredients": ["rice", "onion", "garlic", "carrot", "peas", "oil", "salt", "spices"],
+    "instructions": [
+      "Rinse rice until water runs clear.",
+      "Sauté onion and garlic in oil.",
+      "Add spices and vegetables; cook 2 minutes.",
+      "Add rice + water (1:2).",
+      "Simmer covered until fluffy."
+    ]
+  },
+  {
+    "id": 102,
+    "title": "Grilled Chicken Brochettes",
+    "category": "Meat",
+    "tags": ["chicken", "skewers"],
+    "ingredients": ["chicken", "onion", "bell pepper", "garlic", "oil", "salt", "pepper"],
+    "instructions": [
+      "Marinate chicken with oil, garlic, salt, and pepper for 30 minutes.",
+      "Skewer with onions and peppers.",
+      "Grill until cooked through, turning occasionally."
+    ]
+  },
+  {
+    "id": 103,
+    "title": "Rice and Beans",
+    "category": "Everyday",
+    "tags": ["beans", "rice"],
+    "ingredients": ["rice", "beans", "onion", "tomato", "oil", "salt"],
+    "instructions": [
+      "Cook beans until tender.",
+      "Sauté onion and tomato in oil.",
+      "Add cooked beans, season, and simmer.",
+      "Serve with steamed rice."
+    ]
+  },
+  {
+    "id": 104,
+    "title": "Isombe with Peanut Sauce",
+    "category": "Traditional",
+    "tags": ["cassava leaves"],
+    "ingredients": ["cassava leaves", "peanut butter", "onion", "garlic", "palm oil", "salt"],
+    "instructions": [
+      "Boil cassava leaves until soft.",
+      "Blend peanuts with water to make a sauce.",
+      "Cook onion and garlic in oil, add leaves and peanut sauce.",
+      "Simmer and season."
+    ]
+  },
+  {
+    "id": 105,
+    "title": "Banana Pancakes",
+    "category": "Breakfast",
+    "tags": ["banana", "sweet"],
+    "ingredients": ["banana", "egg", "flour", "milk", "baking powder", "sugar", "salt", "oil"],
+    "instructions": [
+      "Mash bananas.",
+      "Whisk in egg, milk, and dry ingredients.",
+      "Cook small ladles on an oiled pan until golden on each side."
+    ]
+  },
+  {
+    "id": 106,
+    "title": "Tomato Omelette",
+    "category": "Breakfast",
+    "tags": ["eggs"],
+    "ingredients": ["eggs", "tomato", "onion", "salt", "pepper", "oil"],
+    "instructions": [
+      "Beat eggs with salt and pepper.",
+      "Sauté tomato and onion.",
+      "Pour eggs and cook until set."
+    ]
+  },
+  {
+    "id": 107,
+    "title": "Chapati Wraps",
+    "category": "Snack",
+    "tags": ["flatbread"],
+    "ingredients": ["flour", "water", "salt", "oil"],
+    "instructions": [
+      "Knead flour, water, salt, and oil to a soft dough.",
+      "Rest for 20 minutes.",
+      "Roll thin and cook on a hot pan with a little oil."
+    ]
+  },
+  {
+    "id": 108,
+    "title": "Tilapia with Lemon",
+    "category": "Seafood",
+    "tags": ["fish"],
+    "ingredients": ["tilapia", "lemon", "garlic", "salt", "pepper", "oil"],
+    "instructions": [
+      "Season fish with garlic, salt, pepper, and lemon.",
+      "Pan-fry until flaky."
+    ]
+  },
+  {
+    "id": 109,
+    "title": "Vegetable Stir-Fry",
+    "category": "Vegetarian",
+    "tags": ["quick"],
+    "ingredients": ["cabbage", "carrot", "pepper", "soy sauce", "oil", "garlic"],
+    "instructions": [
+      "Stir-fry garlic in oil.",
+      "Add sliced veggies and cook crisp-tender.",
+      "Season with soy sauce."
+    ]
+  },
+  {
+    "id": 110,
+    "title": "Peanut Banana Smoothie",
+    "category": "Drink",
+    "tags": ["banana"],
+    "ingredients": ["banana", "peanut butter", "milk", "honey", "ice"],
+    "instructions": [
+      "Blend all until smooth."
+    ]
+  },
+  {
+    "id": 111,
+    "title": "Pilau with Beef",
+    "category": "Meat",
+    "tags": ["rice", "beef"],
+    "ingredients": ["beef", "rice", "onion", "pilau masala", "garlic", "oil", "salt"],
+    "instructions": [
+      "Brown beef.",
+      "Add onion, garlic, and masala.",
+      "Add rice and water; simmer until cooked."
+    ]
+  },
+  {
+    "id": 112,
+    "title": "Avocado Salad",
+    "category": "Fresh",
+    "tags": ["salad"],
+    "ingredients": ["avocado", "tomato", "onion", "lemon", "salt", "pepper"],
+    "instructions": [
+      "Dice ingredients.",
+      "Toss with lemon, salt, and pepper."
+    ]
+  }
+]

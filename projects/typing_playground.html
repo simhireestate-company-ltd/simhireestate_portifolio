@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Typing Practice + Code Playground — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#063F5E',
+              secondary: '#1a1a69'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --brand-primary: #063F5E;
+      --brand-secondary: #1a1a69;
+    }
+    body {
+      background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), transparent 60%), #f8fafc;
+    }
+    textarea, pre, code {
+      font-family: 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+    }
+    .card-glass {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+    }
+    .tab-btn[aria-selected="true"] {
+      background: rgba(6, 63, 94, 0.12);
+      color: var(--brand-primary);
+    }
+    .meter-bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(6, 63, 94, 0.2), rgba(99, 102, 241, 0.2));
+    }
+    @media (max-width: 1024px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.11/beautify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.11/beautify-css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.11/beautify-html.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body class="min-h-screen text-slate-800">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <header class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 class="text-3xl font-bold" style="color: var(--brand-primary)">Typing Studio & Code Playground</h1>
+        <p class="text-slate-600 mt-1">Master typing speed with challenges and visual analytics, then build interactive demos with multi-file coding tools.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-sm">
+        <button id="shareSession" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Share session link</button>
+        <a href="../projects.html" class="px-3 py-2 text-white rounded" style="background: var(--brand-secondary)">Back</a>
+      </div>
+    </header>
+
+    <section class="grid layout gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <!-- Typing Practice Column -->
+      <div class="space-y-6">
+        <div class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-semibold" style="color: var(--brand-primary)">Typing Challenges</h2>
+              <p class="text-sm text-slate-500">Choose a difficulty or load your own text. Progress saves automatically.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <select id="difficulty" class="border rounded px-2 py-1">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+              <button id="loadCustom" class="px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Custom text</button>
+              <button id="newText" class="px-3 py-1.5 border rounded" style="border-color:#E5E7EB">New sample</button>
+            </div>
+          </div>
+          <div class="mt-4 p-4 bg-slate-50 border border-dashed rounded-xl min-h-[96px]" id="target"></div>
+          <textarea id="input" class="mt-4 w-full h-36 border rounded-2xl px-3 py-3" placeholder="Start typing here..."></textarea>
+          <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div class="p-3 border border-slate-200 rounded-xl bg-white"><div class="text-xs text-slate-500">Time</div><div class="text-lg font-semibold" id="time">0.0s</div></div>
+            <div class="p-3 border border-slate-200 rounded-xl bg-white"><div class="text-xs text-slate-500">WPM</div><div class="text-lg font-semibold" id="wpm">0</div></div>
+            <div class="p-3 border border-slate-200 rounded-xl bg-white"><div class="text-xs text-slate-500">Accuracy</div><div class="text-lg font-semibold" id="acc">0%</div></div>
+            <div class="p-3 border border-slate-200 rounded-xl bg-white"><div class="text-xs text-slate-500">Best WPM</div><div class="text-lg font-semibold" id="best">0</div></div>
+          </div>
+          <div class="mt-4 grid sm:grid-cols-2 gap-2 text-sm">
+            <button id="resetT" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Reset</button>
+            <button id="downloadReport" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Download report</button>
+          </div>
+        </div>
+
+        <div class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg">
+          <h3 class="text-lg font-semibold" style="color: var(--brand-primary)">Performance Analytics</h3>
+          <div class="mt-4 grid md:grid-cols-2 gap-3 text-sm">
+            <div class="p-3 border border-slate-200 rounded-xl bg-slate-50"><div class="text-xs text-slate-500">Average WPM</div><div class="text-lg font-semibold" id="avgWpm">0</div></div>
+            <div class="p-3 border border-slate-200 rounded-xl bg-slate-50"><div class="text-xs text-slate-500">Session Accuracy</div><div class="text-lg font-semibold" id="avgAccuracy">0%</div></div>
+            <div class="p-3 border border-slate-200 rounded-xl bg-slate-50"><div class="text-xs text-slate-500">Practice streak</div><div class="text-lg font-semibold" id="streak">0 days</div></div>
+            <div class="p-3 border border-slate-200 rounded-xl bg-slate-50"><div class="text-xs text-slate-500">Last practice</div><div class="text-lg font-semibold" id="lastPractice">—</div></div>
+          </div>
+          <div class="mt-4">
+            <canvas id="typingChart" class="w-full h-56 bg-white border rounded-2xl"></canvas>
+          </div>
+          <div class="mt-4 text-xs text-slate-500">Tip: Keep consistency to grow your streak. Set personal goals and track progression over time.</div>
+        </div>
+
+        <div class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-semibold" style="color: var(--brand-primary)">Adaptive Practice Coach</h2>
+              <p class="text-sm text-slate-500">Build custom drills based on your recent performance and export them to practice offline.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <button id="generateDrill" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Generate drill</button>
+              <button id="exportDrill" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Export PDF</button>
+            </div>
+          </div>
+          <div class="mt-4 grid md:grid-cols-2 gap-3 text-sm">
+            <div>
+              <label class="text-xs uppercase text-slate-500">Focus area</label>
+              <select id="drillFocus" class="mt-1 w-full border rounded px-3 py-2">
+                <option value="accuracy">Accuracy boost</option>
+                <option value="speed">Speed booster</option>
+                <option value="mixed" selected>Balanced mix</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs uppercase text-slate-500">Preferred length</label>
+              <select id="drillLength" class="mt-1 w-full border rounded px-3 py-2">
+                <option value="short">Short (1 paragraph)</option>
+                <option value="medium" selected>Medium (3 paragraphs)</option>
+                <option value="long">Long (6 paragraphs)</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-4 grid md:grid-cols-2 gap-3 text-sm">
+            <div>
+              <label class="text-xs uppercase text-slate-500">Include challenges</label>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <label class="inline-flex items-center gap-2"><input type="checkbox" id="includeNumbers" checked /> Numbers</label>
+                <label class="inline-flex items-center gap-2"><input type="checkbox" id="includeSymbols" /> Symbols</label>
+                <label class="inline-flex items-center gap-2"><input type="checkbox" id="includeCode" /> Code snippets</label>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs uppercase text-slate-500">Quick summary</label>
+              <div class="mt-2 text-xs text-slate-500" id="drillSummary">Choose options and click “Generate drill”.</div>
+            </div>
+          </div>
+          <textarea id="drillOutput" class="mt-4 w-full h-48 border rounded-2xl px-3 py-3 text-sm" placeholder="Generated drill will appear here…" readonly></textarea>
+          <div class="flex flex-wrap gap-2 text-xs">
+            <button id="saveDrill" class="px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Save drill</button>
+            <button id="loadDrill" class="px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Load drill</button>
+            <button id="clearDrill" class="px-3 py-1.5 border rounded text-red-500" style="border-color:#FECACA">Clear drill</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Code Playground Column -->
+      <div class="space-y-6">
+        <div class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-semibold" style="color: var(--brand-primary)">Code Playground</h2>
+              <p class="text-sm text-slate-500">Create multi-file web demos with live preview, autosave, and template presets.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 text-sm">
+              <button id="run" class="px-3 py-2 text-white rounded" style="background: var(--brand-secondary)">Run</button>
+              <button id="autoRun" class="px-3 py-2 border rounded" style="border-color:#E5E7EB" aria-pressed="false">Auto-run</button>
+              <button id="downloadCode" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Download ZIP</button>
+            </div>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2 text-xs">
+            <button class="tab-btn px-3 py-2 rounded" data-tab="html" aria-selected="true">HTML</button>
+            <button class="tab-btn px-3 py-2 rounded" data-tab="css">CSS</button>
+            <button class="tab-btn px-3 py-2 rounded" data-tab="js">JavaScript</button>
+            <button class="tab-btn px-3 py-2 rounded" data-tab="config">Assets</button>
+            <button class="tab-btn px-3 py-2 rounded" data-tab="notes">Notes</button>
+          </div>
+
+          <div class="mt-4 grid md:grid-cols-2 gap-3 text-sm">
+            <select id="template" class="border rounded px-2 py-2">
+              <option value="basic">Basic HTML/CSS/JS</option>
+              <option value="react">React Starter (CDN)</option>
+              <option value="tailwind">Tailwind Playground</option>
+              <option value="canvas">Canvas Animation</option>
+            </select>
+            <button id="applyTemplate" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Apply template</button>
+          </div>
+
+          <div class="mt-4 grid md:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-3">
+              <label class="text-xs uppercase text-slate-500">Editor</label>
+              <textarea id="editor" class="border rounded-2xl p-3 h-72" spellcheck="false"></textarea>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <button id="saveSnippet" class="px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Save snippet</button>
+                <button id="loadSnippet" class="px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Load snippet</button>
+                <button id="beautify" class="px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Beautify</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-3">
+              <label class="text-xs uppercase text-slate-500">Preview</label>
+              <iframe id="preview" class="border rounded-2xl w-full h-72 bg-white"></iframe>
+              <pre id="highlighted" class="border rounded-2xl p-3 text-xs bg-slate-900 text-white overflow-auto h-48"></pre>
+            </div>
+          </div>
+          <div class="mt-6 border-t border-dashed border-slate-200 pt-6">
+            <h3 class="text-lg font-semibold" style="color: var(--brand-primary)">Beginner Templates Library</h3>
+            <p class="text-sm text-slate-500 mt-1">Pick a starter snippet and customize it directly in the editor. Each template includes inline comments that highlight what to change.</p>
+            <div class="mt-4 grid gap-3 md:grid-cols-2 text-sm">
+              <button class="template-chip px-3 py-2 border rounded text-left" data-template="basic" aria-pressed="false" style="border-color:#E5E7EB">Basic landing page</button>
+              <button class="template-chip px-3 py-2 border rounded text-left" data-template="tables" aria-pressed="false" style="border-color:#E5E7EB">Pricing table with hover states</button>
+              <button class="template-chip px-3 py-2 border rounded text-left" data-template="navigation" aria-pressed="false" style="border-color:#E5E7EB">Responsive navigation</button>
+              <button class="template-chip px-3 py-2 border rounded text-left" data-template="list" aria-pressed="false" style="border-color:#E5E7EB">Interactive to-do list</button>
+              <button class="template-chip px-3 py-2 border rounded text-left" data-template="cssToolkit" aria-pressed="false" style="border-color:#E5E7EB">CSS utility toolkit</button>
+              <button class="template-chip px-3 py-2 border rounded text-left" data-template="jsStarter" aria-pressed="false" style="border-color:#E5E7EB">JavaScript interactivity</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg">
+          <h3 class="text-lg font-semibold" style="color: var(--brand-primary)">Autosave & Sharing</h3>
+          <div class="mt-3 grid md:grid-cols-2 gap-3 text-sm">
+            <label>Autosave name
+              <input id="sessionName" class="mt-1 w-full border rounded px-3 py-2" placeholder="My playground" />
+            </label>
+            <button id="saveSession" class="px-3 py-2 border rounded self-end" style="border-color:#E5E7EB">Save session</button>
+            <button id="loadSession" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Load session</button>
+            <button id="clearSession" class="px-3 py-2 border rounded text-red-500" style="border-color:#FECACA">Clear stored</button>
+          </div>
+          <div class="mt-3 text-xs text-slate-500">Sharing creates a compressed string for your code. Copy the generated link to collaborate instantly.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="customTextDialog" class="max-w-lg w-full rounded-2xl border border-slate-200 shadow-xl">
+    <form method="dialog" class="p-4 space-y-3">
+      <h3 class="text-lg font-semibold" style="color: var(--brand-primary)">Custom typing text</h3>
+      <textarea id="customText" class="w-full h-40 border rounded px-3 py-2" placeholder="Paste or type your own text here..."></textarea>
+      <div class="flex justify-end gap-2 text-sm">
+        <button value="cancel" class="px-3 py-1.5 border rounded" style="border-color:#E5E7EB">Cancel</button>
+        <button value="submit" class="px-3 py-1.5 text-white rounded" style="background: var(--brand-secondary)">Use text</button>
+      </div>
+    </form>
+  </dialog>
+
+  <section class="bg-white/60 backdrop-blur border border-slate-200 rounded-3xl shadow-lg mx-4 my-10">
+    <div class="max-w-6xl mx-auto px-6 py-8">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+        <div class="md:w-2/5 space-y-3">
+          <h2 class="text-2xl font-semibold" style="color: var(--brand-primary)">Shortcut & Troubleshooting Academy</h2>
+          <p class="text-slate-600 text-sm">Keep this quick reference handy while you practice. Shortcuts adapt based on your operating system and include everyday computer-care tips.</p>
+        </div>
+        <div class="md:w-3/5">
+          <div class="flex flex-wrap gap-2 text-xs mb-4">
+            <button class="reference-tab px-3 py-2 rounded" data-reference="shortcuts" aria-selected="true">Keyboard Shortcuts</button>
+            <button class="reference-tab px-3 py-2 rounded" data-reference="troubleshooting">Troubleshooting</button>
+            <button class="reference-tab px-3 py-2 rounded" data-reference="skills">Core Computer Skills</button>
+          </div>
+          <div class="space-y-4 text-sm">
+            <div data-reference-panel="shortcuts" class="reference-panel card-glass border border-slate-200 rounded-2xl p-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="font-semibold" style="color: var(--brand-primary)">Select your OS</h3>
+                <div class="flex flex-wrap gap-2 text-xs">
+                  <button class="shortcut-os-btn px-3 py-1.5 border rounded" data-os="windows" aria-pressed="true">Windows</button>
+                  <button class="shortcut-os-btn px-3 py-1.5 border rounded" data-os="mac">macOS</button>
+                  <button class="shortcut-os-btn px-3 py-1.5 border rounded" data-os="linux">Linux</button>
+                </div>
+              </div>
+              <div id="shortcutGrid" class="mt-4 grid sm:grid-cols-2 gap-3"></div>
+            </div>
+            <div data-reference-panel="troubleshooting" class="reference-panel hidden card-glass border border-slate-200 rounded-2xl p-4 space-y-3">
+              <h3 class="font-semibold" style="color: var(--brand-primary)">Quick Troubleshooting Playbook</h3>
+              <ul class="list-disc list-inside text-slate-600 space-y-1">
+                <li><strong>Apps frozen?</strong> Try <span class="shortcut-hint" data-key="forceQuit"></span>, then restart the application.</li>
+                <li><strong>Slow performance?</strong> Close unused tabs, restart the browser, or reboot the machine once a week.</li>
+                <li><strong>No internet?</strong> Toggle Wi-Fi off/on, check other devices, and restart the router if needed.</li>
+                <li><strong>Display glitches?</strong> Update graphics drivers or switch to an external monitor to isolate the issue.</li>
+                <li><strong>Storage full?</strong> Empty recycle bin/trash, remove temporary files, and archive large media to cloud storage.</li>
+              </ul>
+              <div class="border rounded-2xl p-3 bg-slate-50 text-xs text-slate-500">Tip: Keep a checklist of recurring problems and their fixes. Documenting solutions builds confidence.</div>
+            </div>
+            <div data-reference-panel="skills" class="reference-panel hidden card-glass border border-slate-200 rounded-2xl p-4 space-y-3">
+              <h3 class="font-semibold" style="color: var(--brand-primary)">Essential Computer Skills to Sharpen</h3>
+              <div class="grid sm:grid-cols-2 gap-3 text-sm text-slate-600">
+                <div class="border rounded-2xl p-3 bg-white">
+                  <h4 class="font-medium text-slate-800 mb-1">File Mastery</h4>
+                  <p>Create, rename, zip, and search files quickly. Practice using keyboard shortcuts for file operations.</p>
+                </div>
+                <div class="border rounded-2xl p-3 bg-white">
+                  <h4 class="font-medium text-slate-800 mb-1">Security Hygiene</h4>
+                  <p>Use password managers, enable 2FA, recognize phishing cues, and keep backups synced.</p>
+                </div>
+                <div class="border rounded-2xl p-3 bg-white">
+                  <h4 class="font-medium text-slate-800 mb-1">Browser Power Tips</h4>
+                  <p>Master tab groups, readers, offline modes, developer tools, and bookmarks for research.</p>
+                </div>
+                <div class="border rounded-2xl p-3 bg-white">
+                  <h4 class="font-medium text-slate-800 mb-1">Collaboration Fluency</h4>
+                  <p>Share files with proper permissions, leave clear comments, and manage versions across tools.</p>
+                </div>
+              </div>
+              <div class="border rounded-2xl p-3 bg-slate-50 text-xs text-slate-500">Grow into an in-demand teammate by practicing one skill block per week and journaling progress.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+    const typingPools = {
+      easy: [
+        'Practice makes progress every single day.',
+        'Typing skills help you communicate faster online.',
+        'SimHireEstate builds helpful tools for communities.'
+      ],
+      medium: [
+        'Frontend projects demonstrate real value for stakeholders and clients alike.',
+        'Improve typing accuracy by focusing on rhythm and consistent key travel.',
+        'Use structured practice sessions and micro goals to reduce fatigue.'
+      ],
+      hard: [
+        'Asynchronous JavaScript requires understanding callbacks, promises, and async generators.',
+        'Accessibility demands semantic markup, keyboard navigation, and screen reader testing.',
+        'Optimizing rendering includes batching DOM updates and minimizing layout thrashing.'
+      ]
+    };
+
+    const adaptiveSegments = {
+      accuracy: [
+        'Precision typing drills: type the provided string twice without errors.',
+        'Repeat the paragraph focusing on punctuation accuracy and pausing for corrections.',
+        'Copy the following text using deliberate slow typing to prioritize clean output.'
+      ],
+      speed: [
+        'Speed burst drill: type as fast as possible for 30 seconds, then review accuracy.',
+        'Sprint typing challenge: complete the paragraph below in under one minute.',
+        'Rapid fire activity: press the highlighted keys in order without pausing.'
+      ],
+      mixed: [
+        'Balanced drill: alternate between fast typing and accuracy rewrites.',
+        'Practice set: type the paragraph quickly, then retype focusing on zero mistakes.',
+        'Hybrid challenge: mix numbers, symbols, and words while keeping accuracy above 92%.'
+      ]
+    };
+
+    const templateChips = $$('.template-chip');
+
+    const shortcutData = {
+      windows: [
+        { name: 'Undo / Redo', keys: ['Ctrl + Z', 'Ctrl + Y'] },
+        { name: 'Copy / Paste', keys: ['Ctrl + C', 'Ctrl + V'] },
+        { name: 'Screenshot', keys: ['Win + Shift + S'] },
+        { name: 'Virtual Desktop', keys: ['Ctrl + Win + D'] },
+        { name: 'Emoji Picker', keys: ['Win + .'] },
+        { name: 'Task Manager', keys: ['Ctrl + Shift + Esc'] }
+      ],
+      mac: [
+        { name: 'Undo / Redo', keys: ['⌘ + Z', '⇧ + ⌘ + Z'] },
+        { name: 'Copy / Paste', keys: ['⌘ + C', '⌘ + V'] },
+        { name: 'Screenshot', keys: ['⇧ + ⌘ + 4'] },
+        { name: 'Mission Control', keys: ['Ctrl + ↑'] },
+        { name: 'Emoji Picker', keys: ['⌘ + Ctrl + Space'] },
+        { name: 'Force Quit', keys: ['⌘ + ⌥ + Esc'] }
+      ],
+      linux: [
+        { name: 'Undo / Redo', keys: ['Ctrl + Z', 'Ctrl + Shift + Z'] },
+        { name: 'Copy / Paste', keys: ['Ctrl + C', 'Ctrl + V'] },
+        { name: 'Screenshot', keys: ['Shift + Print Screen'] },
+        { name: 'Workspace Switch', keys: ['Ctrl + Alt + →'] },
+        { name: 'Emoji Picker', keys: ['Ctrl + .'] },
+        { name: 'System Monitor', keys: ['Ctrl + Esc'] }
+      ]
+    };
+
+    const referencePanels = {
+      shortcuts: document.querySelector('[data-reference-panel="shortcuts"]'),
+      troubleshooting: document.querySelector('[data-reference-panel="troubleshooting"]'),
+      skills: document.querySelector('[data-reference-panel="skills"]')
+    };
+
+    let text = '';
+    let startTs = 0;
+    let timer = null;
+    let best = Number(localStorage.getItem('typing:best') || 0);
+    let history = JSON.parse(localStorage.getItem('typing:history') || '[]');
+    let streakCount = Number(localStorage.getItem('typing:streak') || 0);
+    let lastPractice = localStorage.getItem('typing:lastPractice');
+
+    const target = $('#target');
+    const input = $('#input');
+    const timeLabel = $('#time');
+    const wpmLabel = $('#wpm');
+    const accLabel = $('#acc');
+    const bestLabel = $('#best');
+    const shortcutGrid = $('#shortcutGrid');
+    bestLabel.textContent = best;
+
+    function newText(custom = '') {
+      text = custom || randomText($('#difficulty').value);
+      renderTarget();
+      input.value = '';
+      resetMetrics();
+    }
+
+    function randomText(level) {
+      const list = typingPools[level];
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function renderTarget() {
+      const typed = input.value;
+      let output = '';
+      for (let i = 0; i < text.length; i++) {
+        const expected = text[i];
+        const actual = typed[i];
+        let cls = 'text-slate-400';
+        if (actual != null) cls = actual === expected ? 'text-emerald-600' : 'bg-red-100 text-red-600';
+        output += `<span class="px-0.5 ${cls}">${expected === ' ' ? '&nbsp;' : expected}</span>`;
+      }
+      target.innerHTML = output;
+    }
+
+    function resetMetrics() {
+      clearInterval(timer);
+      timer = null;
+      startTs = 0;
+      timeLabel.textContent = '0.0s';
+      wpmLabel.textContent = '0';
+      accLabel.textContent = '0%';
+    }
+
+    function updateStats() {
+      if (!startTs) startTs = performance.now();
+      const seconds = (performance.now() - startTs) / 1000;
+      timeLabel.textContent = seconds.toFixed(1) + 's';
+      const correctChars = input.value.split('').filter((ch, i) => ch === text[i]).length;
+      const words = input.value.length / 5;
+      const wpm = Math.max(0, Math.round((words / seconds) * 60));
+      const accuracy = text.length ? Math.round((correctChars / text.length) * 100) : 0;
+      wpmLabel.textContent = String(wpm);
+      accLabel.textContent = `${accuracy}%`;
+      return { wpm, accuracy, seconds: Number(seconds.toFixed(2)) };
+    }
+
+    input.addEventListener('input', () => {
+      renderTarget();
+      if (!timer) {
+        timer = setInterval(updateStats, 200);
+      }
+      const stats = updateStats();
+      if (input.value === text) {
+        clearInterval(timer);
+        timer = null;
+        finaliseRun(stats);
+      }
+    });
+
+    function finaliseRun(stats) {
+      const entry = { ...stats, timestamp: Date.now(), difficulty: $('#difficulty').value };
+      history.push(entry);
+      if (history.length > 50) history.shift();
+      localStorage.setItem('typing:history', JSON.stringify(history));
+      if (stats.wpm > best) {
+        best = stats.wpm;
+        localStorage.setItem('typing:best', best);
+        bestLabel.textContent = best;
+      }
+      const today = new Date().toDateString();
+      if (lastPractice !== today) {
+        streakCount += 1;
+        lastPractice = today;
+        localStorage.setItem('typing:lastPractice', today);
+        localStorage.setItem('typing:streak', streakCount);
+      }
+      drawTypingChart();
+      updateAnalyticsPanel();
+      alert(`Great job! WPM: ${stats.wpm}, Accuracy: ${stats.accuracy}%`);
+    }
+
+    function renderShortcutGrid(os) {
+      const shortcuts = shortcutData[os];
+      if (!shortcuts) return;
+      shortcutGrid.innerHTML = shortcuts
+        .map((shortcut) => `
+          <div class="border rounded-2xl p-3 bg-white">
+            <div class="text-xs text-slate-500 uppercase">${shortcut.name}</div>
+            <div class="mt-1 font-semibold text-slate-800">${shortcut.keys.join(' • ')}</div>
+          </div>
+        `)
+        .join('');
+      $$('.shortcut-hint').forEach((el) => {
+        const key = el.dataset.key;
+        if (key === 'forceQuit') {
+          el.textContent = os === 'mac' ? '⌘ + ⌥ + Esc' : os === 'windows' ? 'Ctrl + Shift + Esc' : 'Ctrl + Alt + Esc';
+        }
+      });
+    }
+
+    function setActiveReference(tab) {
+      $$('.reference-tab').forEach((btn) => btn.setAttribute('aria-selected', btn.dataset.reference === tab));
+      Object.entries(referencePanels).forEach(([key, panel]) => {
+        panel.classList.toggle('hidden', key !== tab);
+      });
+    }
+
+    $('#newText').addEventListener('click', () => newText());
+    $('#resetT').addEventListener('click', () => newText(text));
+
+    $('#loadCustom').addEventListener('click', () => {
+      const dialog = $('#customTextDialog');
+      dialog.showModal();
+      dialog.addEventListener('close', () => {
+        if (dialog.returnValue === 'submit') {
+          const custom = $('#customText').value.trim();
+          if (custom) newText(custom);
+        }
+      }, { once: true });
+    });
+
+    $('#downloadReport').addEventListener('click', () => {
+      const rows = history.map((h) => `${new Date(h.timestamp).toLocaleString()},${h.wpm},${h.accuracy},${h.difficulty},${h.seconds}s`).join('\n');
+      const csv = `Date,WPM,Accuracy,Difficulty,Duration\n${rows}`;
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'typing-report.csv';
+      link.click();
+    });
+
+    function updateAnalyticsPanel() {
+      if (!history.length) {
+        $('#avgWpm').textContent = '0';
+        $('#avgAccuracy').textContent = '0%';
+        $('#streak').textContent = `${streakCount} days`;
+        $('#lastPractice').textContent = lastPractice || '—';
+        return;
+      }
+      const avgWpm = Math.round(history.reduce((sum, h) => sum + h.wpm, 0) / history.length);
+      const avgAccuracy = Math.round(history.reduce((sum, h) => sum + h.accuracy, 0) / history.length);
+      $('#avgWpm').textContent = avgWpm;
+      $('#avgAccuracy').textContent = `${avgAccuracy}%`;
+      $('#streak').textContent = `${streakCount} days`;
+      $('#lastPractice').textContent = lastPractice ? new Date(lastPractice).toLocaleDateString() : '—';
+    }
+
+    function drawTypingChart() {
+      const canvas = $('#typingChart');
+      const ctx = canvas.getContext('2d');
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = canvas.clientWidth * ratio;
+      canvas.height = canvas.clientHeight * ratio;
+      ctx.scale(ratio, ratio);
+      ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+      ctx.strokeStyle = '#1a1a69';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      history.forEach((entry, index) => {
+        const x = (index / Math.max(history.length - 1, 1)) * (canvas.clientWidth - 40) + 20;
+        const y = canvas.clientHeight - ((entry.wpm / Math.max(best || 1, 80)) * (canvas.clientHeight - 40) + 20);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    const templates = {
+      basic: {
+        html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Playground</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Hero with headline and call to action -->
+  <header class="hero">
+    <h1>Welcome to SimHireEstate</h1>
+    <p>Launch your journey with a ready-to-edit page layout.</p>
+    <button id="cta">Get started</button>
+  </header>
+  <section class="features">
+    <article>
+      <h2>Feature one</h2>
+      <p><!-- Replace with your own copy -->Edit this text to describe your solution.</p>
+    </article>
+    <article>
+      <h2>Feature two</h2>
+      <p><!-- Swap or duplicate articles to add more highlights -->Add more sections or duplicate cards as needed.</p>
+    </article>
+  </section>
+  <script src="app.js"></script>
+</body>
+</html>`,
+        css: `body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+.hero {
+  padding: 80px 24px;
+  text-align: center;
+  background: linear-gradient(120deg, #063F5E, #1a1a69);
+  color: white;
+}
+.hero button {
+  margin-top: 24px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: white;
+  color: #063F5E;
+  border: none;
+}
+.features {
+  display: grid;
+  gap: 24px;
+  padding: 40px 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.features article {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
+}
+`,
+        js: `document.getElementById('cta').addEventListener('click', () => {
+  alert('Customize this CTA to move users to your next step!');
+});`
+      },
+      react: {
+        html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>React Playground</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>`,
+        css: `body {
+  font-family: 'Inter', sans-serif;
+  background: #f1f5f9;
+  padding: 40px;
+}`,
+        js: `const { useState } = React;
+
+function App() {
+  const [count, setCount] = useState(0);
+  return React.createElement('div', { style: { textAlign: 'center' } },
+    React.createElement('h1', null, 'React CDN Playground'),
+    React.createElement('button', { onClick: () => setCount(count + 1) }, 'Clicks: ' + count)
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));`
+      },
+      tailwind: {
+        html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+  <div class="bg-white/10 p-8 rounded-2xl backdrop-blur flex flex-col gap-3">
+    <h1 class="text-3xl font-bold">Tailwind Sandbox</h1>
+    <button class="px-4 py-2 bg-emerald-500 rounded shadow">Glow Button</button>
+  </div>
+</body>
+</html>`,
+        css: `/* Tailwind CSS from CDN will compile at runtime */`,
+        js: `document.querySelector('button').addEventListener('click', () => {
+  alert('Tailwind button clicked!');
+});`
+      },
+      tables: {
+        html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Pricing Table Demo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Example pricing table -->
+  <main class="pricing">
+    <h1>Choose your plan</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Plan</th>
+          <th>Features</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Starter</td>
+          <td>Basic tools, email support</td>
+          <td>$9/mo</td>
+        </tr>
+        <tr>
+          <td>Growth</td>
+          <td>Teams, analytics, integrations</td>
+          <td>$29/mo</td>
+        </tr>
+        <tr>
+          <td>Enterprise</td>
+          <td>Custom SLAs, dedicated manager</td>
+          <td>$99/mo</td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>`,
+        css: `body {
+  font-family: 'Inter', sans-serif;
+  background: #f8fafc;
+  padding: 40px;
+}
+.pricing {
+  max-width: 720px;
+  margin: 0 auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+th, td {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+th {
+  background: #1a1a69;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+tr:last-child td {
+  border-bottom: none;
+}
+`,
+        js: `// Example: highlight row on hover
+const rows = document.querySelectorAll('tbody tr');
+rows.forEach((row) => {
+  row.addEventListener('mouseenter', () => row.classList.add('active'));
+  row.addEventListener('mouseleave', () => row.classList.remove('active'));
+});`
+      },
+      navigation: {
+        html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Responsive Navigation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <img src="https://dummyimage.com/48x48/063F5E/ffffff" alt="Logo" />
+      <span>SimHireEstate</span>
+    </div>
+    <button id="navToggle" aria-expanded="false" aria-controls="navLinks">☰</button>
+    <nav id="navLinks" class="links">
+      <a href="#">Home</a>
+      <a href="#">Projects</a>
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+    </nav>
+  </header>
+  <main>
+    <section class="hero">
+      <h1>Build beautiful navigation</h1>
+      <p>Use this template to explore responsive headers with pure CSS and a hint of JavaScript.</p>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>`,
+        css: `* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: white;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: #063F5E;
+}
+.links {
+  display: flex;
+  gap: 16px;
+}
+.links a {
+  text-decoration: none;
+  color: #1a1a69;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.links a:hover {
+  background: rgba(6, 63, 94, 0.08);
+}
+#navToggle {
+  display: none;
+  font-size: 1.5rem;
+}
+@media (max-width: 768px) {
+  #navToggle {
+    display: block;
+  }
+  .links {
+    position: absolute;
+    top: 72px;
+    right: 16px;
+    flex-direction: column;
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+    transform: scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.2s ease;
+  }
+  .links.open {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+`,
+        js: `const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
+navToggle.addEventListener('click', () => {
+  const expanded = navToggle.getAttribute('aria-expanded') === 'true';
+  navToggle.setAttribute('aria-expanded', String(!expanded));
+  navLinks.classList.toggle('open');
+});`
+      },
+      list: {
+        html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Interactive List View</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Team Tasks</h1>
+    <ul class="task-list" id="taskList">
+      <li>
+        <label>
+          <input type="checkbox" checked />
+          Design onboarding flow
+        </label>
+      </li>
+      <li>
+        <label>
+          <input type="checkbox" />
+          Update release notes
+        </label>
+      </li>
+      <li>
+        <label>
+          <input type="checkbox" />
+          Prep weekly metrics report
+        </label>
+      </li>
+    </ul>
+    <form id="taskForm">
+      <input type="text" name="task" placeholder="Add a task" required />
+      <button type="submit">Add</button>
+    </form>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>`,
+        css: `.container {
+  max-width: 480px;
+  margin: 80px auto;
+  padding: 32px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
+  font-family: 'Inter', sans-serif;
+}
+.task-list {
+  list-style: none;
+  margin: 24px 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.task-list li {
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.task-list input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+}
+form {
+  display: flex;
+  gap: 12px;
+}
+input[type='text'] {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #cbd5f5;
+}
+button {
+  padding: 12px 20px;
+  background: #1a1a69;
+  color: white;
+  border: none;
+  border-radius: 12px;
+}
+`,
+        js: `const form = document.getElementById('taskForm');
+const listEl = document.getElementById('taskList');
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const data = new FormData(form);
+  const value = String(data.get('task') || '').trim();
+  if (!value) return;
+  const li = document.createElement('li');
+  li.innerHTML = `<label><input type="checkbox" /> ${value}</label>`;
+  listEl.appendChild(li);
+  form.reset();
+});`
+      },
+      cssToolkit: {
+        html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CSS Utility Toolkit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrapper">
+    <section class="card card--primary">Primary card</section>
+    <section class="card card--secondary">Secondary card</section>
+    <section class="card card--accent">Accent card</section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>`,
+        css: `:root {
+  --primary: #063F5E;
+  --secondary: #1a1a69;
+  --accent: #38bdf8;
+}
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #f8fafc;
+  padding: 60px;
+}
+.wrapper {
+  display: grid;
+  gap: 20px;
+}
+.card {
+  padding: 24px;
+  border-radius: 16px;
+  color: white;
+}
+.card--primary { background: var(--primary); }
+.card--secondary { background: var(--secondary); }
+.card--accent { background: var(--accent); }
+@media (min-width: 640px) {
+  .wrapper {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+`,
+        js: `console.log('CSS toolkit template ready');`
+      },
+      jsStarter: {
+        html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>JavaScript Interactivity</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="page">
+    <h1>JavaScript Interactivity</h1>
+    <p>Click the button to cycle through status badges.</p>
+    <button id="toggleStatus">Current status: Draft</button>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>`,
+        css: `body {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+  color: white;
+}
+.page {
+  background: rgba(15, 23, 42, 0.75);
+  padding: 48px;
+  border-radius: 24px;
+  text-align: center;
+}
+button {
+  margin-top: 24px;
+  padding: 12px 24px;
+  background: #38bdf8;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+`,
+        js: `const states = ['Draft', 'Review', 'Published'];
+let index = 0;
+const button = document.getElementById('toggleStatus');
+button.addEventListener('click', () => {
+  index = (index + 1) % states.length;
+  button.textContent = 'Current status: ' + states[index];
+});`
+      }
+    };
+
+    const editor = $('#editor');
+    const preview = $('#preview');
+    const highlighted = $('#highlighted');
+    const autoRunBtn = $('#autoRun');
+    let activeTab = 'html';
+    let project = { html: '', css: '', js: '', assets: '{}' };
+
+    function setActiveTab(tab) {
+      activeTab = tab;
+      $$('.tab-btn').forEach((btn) => btn.setAttribute('aria-selected', btn.dataset.tab === tab));
+      editor.value = project[tab];
+      highlightEditor();
+    }
+
+    function highlightEditor() {
+      const lang = activeTab === 'html' ? 'html' : activeTab === 'css' ? 'css' : activeTab === 'js' ? 'javascript' : 'json';
+      highlighted.textContent = editor.value;
+      highlighted.className = 'border rounded-2xl p-3 text-xs bg-slate-900 text-white overflow-auto h-48 language-' + lang;
+      if (window.hljs) {
+        hljs.highlightElement(highlighted);
+      }
+    }
+
+    editor.addEventListener('input', () => {
+      project[activeTab] = editor.value;
+      highlightEditor();
+      if (autoRunBtn.getAttribute('aria-pressed') === 'true') runProject();
+    });
+
+    $$('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
+    });
+
+    $('#applyTemplate').addEventListener('click', () => {
+      const tpl = templates[$('#template').value];
+      if (!tpl) return;
+      project.html = tpl.html;
+      project.css = tpl.css;
+      project.js = tpl.js;
+      project.config = JSON.stringify({ assets: [] }, null, 2);
+      project.assets = project.config;
+      setActiveTab('html');
+      editor.value = project.html;
+      highlightEditor();
+      runProject();
+    });
+
+    function wrapHTML(html, css, js, assets) {
+      let assetScripts = '';
+      let cssLinks = '';
+      try {
+        const parsed = JSON.parse(assets || '{}');
+        if (Array.isArray(parsed.assets)) {
+          assetScripts = parsed.assets
+            .filter((url) => typeof url === 'string' && url.trim())
+            .map((url) => `<script src="${url}"></script>`)
+            .join('\n');
+        }
+        if (Array.isArray(parsed.styles)) {
+          cssLinks = parsed.styles
+            .filter((url) => typeof url === 'string' && url.trim())
+            .map((url) => `<link rel="stylesheet" href="${url}">`)
+            .join('\n');
+        }
+      } catch (err) {
+        console.warn('Invalid assets JSON');
+      }
+      return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  ${cssLinks}
+  <style></style>
+</head>
+<body>
+  ${html}
+  ${assetScripts}
+  <script>try {${js}} catch (err) { document.body.insertAdjacentHTML('beforeend', '<pre style="color:red">' + err + '</pre>'); }</script>
+</body>
+</html>`;
+    }
+
+    function runProject() {
+      const content = wrapHTML(project.html, project.css, project.js, project.assets);
+      const blob = new Blob([content], { type: 'text/html' });
+      preview.src = URL.createObjectURL(blob);
+      highlightEditor();
+    }
+
+    $('#run').addEventListener('click', runProject);
+
+    autoRunBtn.addEventListener('click', () => {
+      const active = autoRunBtn.getAttribute('aria-pressed') === 'true';
+      autoRunBtn.setAttribute('aria-pressed', !active);
+      runProject();
+    });
+
+    $('#beautify').addEventListener('click', () => {
+      if (activeTab === 'html' || activeTab === 'css' || activeTab === 'js') {
+        project[activeTab] = beautify(project[activeTab]);
+        editor.value = project[activeTab];
+        highlightEditor();
+      }
+    });
+
+    function beautify(code) {
+      try {
+        if (activeTab === 'html') return html_beautify(code);
+        if (activeTab === 'css') return css_beautify(code);
+        if (activeTab === 'js') return js_beautify(code);
+      } catch (err) {
+        console.warn('Beautify failed', err);
+      }
+      return code;
+    }
+
+    $('#saveSnippet').addEventListener('click', () => {
+      const storageKey = 'playground:snippets';
+      const list = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const name = prompt('Snippet name?');
+      if (!name) return;
+      list.push({ name, project, savedAt: Date.now() });
+      localStorage.setItem(storageKey, JSON.stringify(list));
+      alert('Snippet saved.');
+    });
+
+    $('#loadSnippet').addEventListener('click', () => {
+      const list = JSON.parse(localStorage.getItem('playground:snippets') || '[]');
+      if (!list.length) {
+        alert('No snippets saved yet.');
+        return;
+      }
+      const names = list.map((item, i) => `${i + 1}. ${item.name}`).join('\n');
+      const choice = prompt(`Choose snippet:\n${names}`);
+      const index = Number(choice) - 1;
+      if (Number.isInteger(index) && list[index]) {
+        project = structuredClone(list[index].project);
+        setActiveTab('html');
+        editor.value = project.html;
+        highlightEditor();
+        runProject();
+      }
+    });
+
+    $('#downloadCode').addEventListener('click', async () => {
+      const zip = new JSZip();
+      zip.file('index.html', project.html);
+      zip.file('style.css', project.css);
+      zip.file('app.js', project.js);
+      zip.file('assets.json', project.assets || '{}');
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'playground.zip';
+      link.click();
+    });
+
+    $('#saveSession').addEventListener('click', () => {
+      const name = $('#sessionName').value.trim() || 'default';
+      localStorage.setItem(`playground:session:${name}`, JSON.stringify(project));
+      alert('Session saved.');
+    });
+
+    $('#loadSession').addEventListener('click', () => {
+      const name = $('#sessionName').value.trim() || 'default';
+      const saved = localStorage.getItem(`playground:session:${name}`);
+      if (!saved) {
+        alert('No session found with that name.');
+        return;
+      }
+      project = JSON.parse(saved);
+      setActiveTab('html');
+      editor.value = project.html;
+      highlightEditor();
+      runProject();
+    });
+
+    $('#clearSession').addEventListener('click', () => {
+      const name = $('#sessionName').value.trim() || 'default';
+      localStorage.removeItem(`playground:session:${name}`);
+      alert('Session cleared.');
+    });
+
+    $('#shareSession').addEventListener('click', () => {
+      const payload = LZString.compressToEncodedURIComponent(JSON.stringify(project));
+      const url = `${location.origin}${location.pathname}?code=${payload}`;
+      navigator.clipboard.writeText(url).then(() => alert('Shareable link copied!'));
+    });
+
+    function loadFromQuery() {
+      const params = new URLSearchParams(location.search);
+      const code = params.get('code');
+      if (code) {
+        try {
+          project = JSON.parse(LZString.decompressFromEncodedURIComponent(code));
+          setActiveTab('html');
+          editor.value = project.html;
+          highlightEditor();
+          runProject();
+        } catch (err) {
+          console.warn('Unable to load shared code', err);
+        }
+      }
+    }
+
+    function initProject() {
+      project = { html: '', css: '', js: '', assets: '{}' };
+      $('#applyTemplate').click();
+    }
+
+    window.addEventListener('resize', () => {
+      drawTypingChart();
+    });
+
+    function initTyping() {
+      if (lastPractice) {
+        $('#lastPractice').textContent = new Date(lastPractice).toLocaleDateString();
+      }
+      updateAnalyticsPanel();
+      drawTypingChart();
+      newText();
+    }
+
+    loadFromQuery();
+    initTyping();
+    initProject();
+  </script>
+</body>
+</html>

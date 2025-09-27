@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — Math Master Tool</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f1f5f9; color:#0f172a; }
+    header { position:sticky; top:0; background:#fff; border-bottom:1px solid #e5e7eb; z-index:10; }
+    header .wrap { max-width: 1100px; margin: 0 auto; display:flex; align-items:center; justify-content:space-between; padding: 12px 16px; }
+    header .brand { display:flex; align-items:center; gap:10px; }
+    header img { height:28px; width:auto; }
+    header h1 { margin:0; font-size:18px; color: var(--brand-primary); }
+
+    main { max-width: 1100px; margin: 16px auto; padding: 0 16px; }
+
+    .tabs { display:flex; flex-wrap: wrap; gap:8px; margin-bottom: 12px; }
+    .tab-btn { cursor:pointer; border:1px solid #e5e7eb; background:#fff; color:#111827; padding:8px 10px; border-radius:10px; font-weight:600; }
+    .tab-btn.active { background: var(--brand-secondary); color:#fff; border-color: var(--brand-secondary); }
+
+    .panel { background:#fff; border:1px solid #e5e7eb; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+    .panel h2 { margin:0 0 10px 0; font-size: 16px; color: var(--brand-primary); }
+
+    input, textarea, select { width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius: 10px; font-size:14px; }
+    .row { display:grid; gap:10px; grid-template-columns: 1fr; }
+    @media (min-width: 860px){ .row.two { grid-template-columns: 1fr 1fr; } .row.three { grid-template-columns: 1fr 1fr 1fr; } }
+    .btn { cursor:pointer; border:none; padding:10px 12px; border-radius:10px; font-weight:700; color:#fff; background: var(--brand-secondary); }
+    .muted { color:#64748b; }
+    .formula { background:#f8fafc; border:1px dashed #e5e7eb; padding:8px; border-radius:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+    canvas { background:#fff; border:1px solid #e5e7eb; border-radius:10px; }
+    .grid { display:grid; gap:12px; grid-template-columns: 1fr; }
+    @media (min-width: 980px) { .grid { grid-template-columns: 1.2fr .8fr; } }
+    .error { color:#b91c1c; font-size:.95rem; }
+    .ok { color:#065f46; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand">
+        <img src="../assets/logo.png" alt="SimHireEstate" />
+        <h1>Math Master Tool — Learn by Doing</h1>
+      </div>
+      <div class="muted" style="font-size:12px">All frontend, no servers. Educational step-by-step solutions.</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs" id="tabs"></div>
+
+    <!-- Algebra -->
+    <section class="panel" data-tab="algebra">
+      <h2>Algebra Equation Solver (Linear)</h2>
+      <div class="row two">
+        <input id="algInput" placeholder="Example: 2x + 5 = 15" value="2x + 5 = 15" />
+        <button class="btn" id="algSolve">Solve</button>
+      </div>
+      <div class="formula" style="margin-top:10px">Solves equations of type ax + b = c. Shows steps like: 2x + 5 = 15 → 2x = 10 → x = 5.</div>
+      <div id="algSteps" style="margin-top:10px"></div>
+    </section>
+
+    <!-- Quadratic -->
+    <section class="panel" data-tab="quadratic">
+      <h2>Quadratic Equation Calculator</h2>
+      <div class="row three">
+        <input id="qa" type="number" step="any" placeholder="a" value="1" />
+        <input id="qb" type="number" step="any" placeholder="b" value="-3" />
+        <input id="qc" type="number" step="any" placeholder="c" value="-4" />
+      </div>
+      <div class="row two" style="margin-top:10px">
+        <button class="btn" id="qSolve">Compute</button>
+        <div class="formula">x = [-b ± √(b² - 4ac)] / (2a)</div>
+      </div>
+      <div id="qOut" style="margin-top:8px"></div>
+      <div style="margin-top:10px">
+        <canvas id="qCanvas" width="560" height="260"></canvas>
+      </div>
+    </section>
+
+    <!-- Geometry -->
+    <section class="panel" data-tab="geometry">
+      <h2>Geometry Calculator</h2>
+      <div class="row two">
+        <select id="geoShape">
+          <option value="circle">Circle</option>
+          <option value="triangle">Triangle (base & height)</option>
+          <option value="rectangle">Rectangle</option>
+          <option value="sphere">Sphere</option>
+          <option value="cylinder">Cylinder</option>
+        </select>
+        <div id="geoFormula" class="formula"></div>
+      </div>
+      <div id="geoInputs" class="row two" style="margin-top:10px"></div>
+      <div class="row two" style="margin-top:8px">
+        <button class="btn" id="geoCalc">Calculate</button>
+        <div id="geoResult"></div>
+      </div>
+      <div style="margin-top:10px"><canvas id="geoCanvas" width="560" height="220"></canvas></div>
+    </section>
+
+    <!-- Matrix -->
+    <section class="panel" data-tab="matrix">
+      <h2>Matrix Calculator</h2>
+      <div class="row two">
+        <select id="mSize">
+          <option value="2">2x2</option>
+          <option value="3">3x3</option>
+        </select>
+        <select id="mOp">
+          <option value="add">Add</option>
+          <option value="sub">Subtract</option>
+          <option value="mul">Multiply</option>
+          <option value="det">Determinant</option>
+          <option value="inv">Inverse</option>
+        </select>
+      </div>
+      <div class="grid" style="margin-top:10px">
+        <div>
+          <div class="muted">Matrix A</div>
+          <div id="mA"></div>
+        </div>
+        <div>
+          <div class="muted">Matrix B (for add/sub/mul)</div>
+          <div id="mB"></div>
+        </div>
+      </div>
+      <div class="row two" style="margin-top:10px">
+        <button class="btn" id="mCalc">Compute</button>
+        <div id="mOut"></div>
+      </div>
+      <div id="mSteps" class="formula" style="margin-top:10px"></div>
+    </section>
+
+    <!-- Calculus -->
+    <section class="panel" data-tab="calculus">
+      <h2>Derivatives & Integrals Helper</h2>
+      <div class="row two">
+        <input id="fx" placeholder="Enter f(x), e.g., 3x^2 + 2x - 5" value="3x^2 + 2x - 5" />
+        <button class="btn" id="calcDo">Compute</button>
+      </div>
+      <div class="formula" style="margin-top:8px">Supports simple polynomials sums like ax^n + bx + c. Shows power rule steps.</div>
+      <div id="calcOut" style="margin-top:8px"></div>
+      <div id="calcSteps" class="formula" style="margin-top:8px"></div>
+    </section>
+
+    <!-- Statistics -->
+    <section class="panel" data-tab="stats">
+      <h2>Statistics Helper</h2>
+      <div class="row two">
+        <textarea id="statsInput" placeholder="Enter numbers separated by commas or spaces">1,2,2,3,4,10</textarea>
+        <button class="btn" id="statsGo">Analyze</button>
+      </div>
+      <div id="statsOut" style="margin-top:8px"></div>
+      <div class="formula" style="margin-top:8px">Mean = Σx/n, Median = middle value, Mode = most frequent, StdDev = √(Σ(x-μ)²/n).</div>
+    </section>
+
+    <!-- Trigonometry -->
+    <section class="panel" data-tab="trig">
+      <h2>Trigonometry Helper</h2>
+      <div class="row two">
+        <input id="angle" type="number" step="any" placeholder="Angle" value="30" />
+        <select id="angleUnit"><option value="deg">Degrees</option><option value="rad">Radians</option></select>
+      </div>
+      <div class="row two" style="margin-top:10px">
+        <button class="btn" id="trigGo">Compute</button>
+        <div class="formula">Identity: sin²θ + cos²θ = 1</div>
+      </div>
+      <div id="trigOut" style="margin-top:8px"></div>
+      <div style="margin-top:10px"><canvas id="trigCanvas" width="320" height="320"></canvas></div>
+    </section>
+  </main>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    // Tabs setup
+    const sections = [
+      { key: 'algebra', label: 'Algebra' },
+      { key: 'quadratic', label: 'Quadratic' },
+      { key: 'geometry', label: 'Geometry' },
+      { key: 'matrix', label: 'Matrix' },
+      { key: 'calculus', label: 'Derivatives & Integrals' },
+      { key: 'stats', label: 'Statistics' },
+      { key: 'trig', label: 'Trigonometry' },
+    ];
+    const tabsCont = el('tabs');
+    sections.forEach(s=>{
+      const b = document.createElement('button');
+      b.className = 'tab-btn'; b.textContent = s.label; b.dataset.key = s.key;
+      b.addEventListener('click', ()=>activateTab(s.key));
+      tabsCont.appendChild(b);
+    });
+    function activateTab(key){
+      document.querySelectorAll('.panel').forEach(p=>p.style.display = p.dataset.tab===key ? 'block' : 'none');
+      document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.key===key));
+      localStorage.setItem('mathMasterTab', key);
+    }
+    activateTab(localStorage.getItem('mathMasterTab') || 'algebra');
+
+    // 1) Algebra: parse ax + b = c
+    el('algSolve').addEventListener('click', ()=>{
+      const raw = el('algInput').value.replace(/\s+/g,'');
+      const out = el('algSteps');
+      try{
+        const [L,R] = raw.split('=');
+        if (!R) throw new Error('Equation must contain =');
+        // Match ax+b or ax-b or a*x etc.
+        const m = L.match(/^([+-]?\d*\.?\d*)x([+-]?\d*\.?\d+)?$/i);
+        if(!m) throw new Error('Expected form ax + b');
+        const a = parseFloat(m[1] === '' || m[1] === '+' || m[1] === '-' ? (m[1] === '-' ? '-1' : '1') : m[1]);
+        const b = parseFloat(m[2] || '0');
+        const c = parseFloat(R);
+        if(!isFinite(a) || !isFinite(b) || !isFinite(c)) throw new Error('Invalid numbers');
+        const step1 = `${L} = ${R}`;
+        const step2 = `${a}x ${b>=0?'+':''}${b} = ${c}`;
+        const step3 = `${a}x = ${c} ${b>=0?'-':'+'} ${Math.abs(b)} → ${a}x = ${c - b}`;
+        const step4 = `x = (${c - b}) / ${a} = ${(c - b)/a}`;
+        out.innerHTML = `<div class="ok"><strong>x = ${(c-b)/a}</strong></div><div class="formula">${step1}<br>${step2}<br>${step3}<br>${step4}</div>`;
+      }catch(e){ out.innerHTML = `<div class='error'>${e.message}</div>`; }
+    });
+
+    // 2) Quadratic
+    function drawQuadratic(a,b,c){
+      const cv = el('qCanvas'); const ctx = cv.getContext('2d');
+      ctx.clearRect(0,0,cv.width,cv.height);
+      // Axes
+      ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+      const midX = cv.width/2, midY = cv.height/2;
+      ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(cv.width, midY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(midX, 0); ctx.lineTo(midX, cv.height); ctx.stroke();
+      // Plot y = ax^2 + bx + c with scale
+      const scale = 20; // pixels per unit
+      ctx.strokeStyle = '#1a1a69'; ctx.lineWidth = 2; ctx.beginPath();
+      for(let px=0; px<cv.width; px++){
+        const x = (px - midX)/scale;
+        const y = a*x*x + b*x + c;
+        const py = midY - y*scale;
+        if(px===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    el('qSolve').addEventListener('click', ()=>{
+      const a = parseFloat(el('qa').value), b = parseFloat(el('qb').value), c = parseFloat(el('qc').value);
+      if(!isFinite(a) || a===0){ el('qOut').innerHTML = `<div class='error'>a must be non-zero</div>`; return; }
+      const D = b*b - 4*a*c;
+      let roots;
+      if(D>0){ const r1 = (-b + Math.sqrt(D))/(2*a), r2 = (-b - Math.sqrt(D))/(2*a); roots = `Two real roots: x1 = ${r1}, x2 = ${r2}`; }
+      else if(D===0){ const r = (-b)/(2*a); roots = `One real root: x = ${r}`; }
+      else { const real = (-b)/(2*a), imag = Math.sqrt(-D)/(2*a); roots = `Complex roots: ${real} ± ${imag}i`; }
+      el('qOut').innerHTML = `<div><strong>Discriminant D = ${D}</strong></div><div>${roots}</div>`;
+      drawQuadratic(a,b,c);
+    });
+
+    // 3) Geometry
+    const GEO = {
+      circle: { inputs: [{k:'r',label:'Radius r'}], formula: 'Area = πr², Perimeter = 2πr' },
+      triangle: { inputs: [{k:'b',label:'Base b'},{k:'h',label:'Height h'}], formula: 'Area = (b·h)/2' },
+      rectangle: { inputs: [{k:'w',label:'Width w'},{k:'h',label:'Height h'}], formula: 'Area = w·h, Perimeter = 2(w+h)' },
+      sphere: { inputs: [{k:'r',label:'Radius r'}], formula: 'Surface = 4πr², Volume = 4/3 πr³' },
+      cylinder: { inputs: [{k:'r',label:'Radius r'},{k:'h',label:'Height h'}], formula: 'Surface = 2πr(h+r), Volume = πr²h' },
+    };
+    function renderGeoInputs(){
+      const s = el('geoShape').value; const box = el('geoInputs'); const info = el('geoFormula');
+      box.innerHTML=''; info.textContent = GEO[s].formula;
+      GEO[s].inputs.forEach(def=>{ const i=document.createElement('input'); i.type='number'; i.step='any'; i.placeholder=def.label; i.dataset.k=def.k; box.appendChild(i); });
+    }
+    renderGeoInputs();
+    el('geoShape').addEventListener('change', renderGeoInputs);
+    el('geoCalc').addEventListener('click', ()=>{
+      const s = el('geoShape').value; const fields=[...el('geoInputs').querySelectorAll('input')];
+      const vals = {}; fields.forEach(i=> vals[i.dataset.k] = parseFloat(i.value));
+      const out = el('geoResult');
+      try{
+        let text = '';
+        if(s==='circle'){
+          const {r}=vals; const A=Math.PI*r*r, P=2*Math.PI*r; text = `Area = ${A.toFixed(4)}, Perimeter = ${P.toFixed(4)}`; drawCircle(r);
+        } else if(s==='triangle'){
+          const {b,h}=vals; const A=0.5*b*h; text = `Area = ${A.toFixed(4)}`; drawTriangle(b,h);
+        } else if(s==='rectangle'){
+          const {w,h}=vals; const A=w*h, P=2*(w+h); text = `Area = ${A.toFixed(4)}, Perimeter = ${P.toFixed(4)}`; drawRectangle(w,h);
+        } else if(s==='sphere'){
+          const {r}=vals; const S=4*Math.PI*r*r, V=4/3*Math.PI*r*r*r; text = `Surface = ${S.toFixed(4)}, Volume = ${V.toFixed(4)}`; drawCircle(r);
+        } else if(s==='cylinder'){
+          const {r,h}=vals; const S=2*Math.PI*r*(h+r), V=Math.PI*r*r*h; text = `Surface = ${S.toFixed(4)}, Volume = ${V.toFixed(4)}`; drawCylinder(r,h);
+        }
+        out.innerHTML = `<div class='ok'>${text}</div>`;
+      }catch(e){ out.innerHTML = `<div class='error'>Check inputs</div>`; }
+    });
+    function clearGeo(){ const cv=el('geoCanvas'),ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height); ctx.strokeStyle='#1a1a69'; ctx.lineWidth=2; return {cv,ctx}; }
+    function drawCircle(r){ const {cv,ctx}=clearGeo(); const rad = Math.max(20, Math.min(90, r*10)); ctx.beginPath(); ctx.arc(cv.width/2, cv.height/2, rad, 0, 2*Math.PI); ctx.stroke(); }
+    function drawTriangle(b,h){ const {cv,ctx}=clearGeo(); const sx= cv.width/2-60, sy=cv.height/2+60; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx+120, sy); ctx.lineTo(sx+120, sy- Math.min(120, h*10)); ctx.closePath(); ctx.stroke(); }
+    function drawRectangle(w,h){ const {cv,ctx}=clearGeo(); const ww=Math.min(150, w*10), hh=Math.min(100, h*10); ctx.strokeRect(cv.width/2-ww/2, cv.height/2-hh/2, ww, hh); }
+    function drawCylinder(r,h){ const {cv,ctx}=clearGeo(); const rr=Math.min(70, r*8), hh=Math.min(140, h*10); const cx=cv.width/2, cy=cv.height/2; ctx.beginPath(); ctx.ellipse(cx, cy-hh/2, rr, rr/4, 0, 0, 2*Math.PI); ctx.moveTo(cx-rr, cy-hh/2); ctx.lineTo(cx-rr, cy+hh/2); ctx.moveTo(cx+rr, cy-hh/2); ctx.lineTo(cx+rr, cy+hh/2); ctx.stroke(); ctx.beginPath(); ctx.ellipse(cx, cy+hh/2, rr, rr/4, 0, 0, Math.PI); ctx.stroke(); }
+
+    // 4) Matrix utilities
+    function buildMatrix(containerId, n){ const cont=el(containerId); cont.innerHTML=''; for(let i=0;i<n;i++){ const row=document.createElement('div'); row.className='row two'; for(let j=0;j<n;j++){ const inp=document.createElement('input'); inp.type='number'; inp.step='any'; inp.placeholder=`${i+1},${j+1}`; row.appendChild(inp);} cont.appendChild(row);} }
+    function getMatrix(containerId, n){ const cont=el(containerId); const vals=[]; const inputs=[...cont.querySelectorAll('input')]; for(let i=0;i<n;i++){ vals[i]=[]; for(let j=0;j<n;j++){ vals[i][j]=parseFloat(inputs[i* n + j].value||'0'); } } return vals; }
+    function matAdd(A,B){ return A.map((r,i)=> r.map((v,j)=> v + B[i][j])); }
+    function matSub(A,B){ return A.map((r,i)=> r.map((v,j)=> v - B[i][j])); }
+    function matMul(A,B){ const n=A.length; const C=Array.from({length:n},()=>Array(n).fill(0)); for(let i=0;i<n;i++){ for(let j=0;j<n;j++){ for(let k=0;k<n;k++){ C[i][j]+=A[i][k]*B[k][j]; } } } return C; }
+    function det2(A){ return A[0][0]*A[1][1]-A[0][1]*A[1][0]; }
+    function det3(A){ const [a,b,c]=A[0], [d,e,f]=A[1], [g,h,i]=A[2]; return a*(e*i-f*h)-b*(d*i-f*g)+c*(d*h-e*g); }
+    function inv2(A){ const d=det2(A); if(d===0) return null; return [[ A[1][1]/d, -A[0][1]/d ], [ -A[1][0]/d, A[0][0]/d ]]; }
+    function cof3(A,i,j){ const m=[]; for(let r=0;r<3;r++){ if(r===i) continue; const row=[]; for(let c=0;c<3;c++){ if(c===j) continue; row.push(A[r][c]); } m.push(row); } return det2(m); }
+    function inv3(A){ const d=det3(A); if(d===0) return null; const C=[[0,0,0],[0,0,0],[0,0,0]]; for(let i=0;i<3;i++){ for(let j=0;j<3;j++){ const sign=((i+j)%2===0)?1:-1; C[i][j]=sign*cof3(A,i,j); } } // adjoint is transpose of cofactor matrix
+      const adj=[[C[0][0],C[1][0],C[2][0]],[C[0][1],C[1][1],C[2][1]],[C[0][2],C[1][2],C[2][2]]];
+      return adj.map(r=> r.map(v=> v/d)); }
+    function fmtMatrix(M){ return '<table style="border-collapse:collapse">'+M.map(r=>'<tr>'+r.map(v=>`<td style=\"border:1px solid #e5e7eb;padding:4px 6px\">${Number(v.toFixed? v.toFixed(4): v)}</td>`).join('')+'</tr>').join('')+'</table>'; }
+
+    function renderMatrices(){ const n=parseInt(el('mSize').value); buildMatrix('mA',n); buildMatrix('mB',n); }
+    renderMatrices();
+    el('mSize').addEventListener('change', renderMatrices);
+    el('mCalc').addEventListener('click', ()=>{
+      const n=parseInt(el('mSize').value); const op=el('mOp').value; const A=getMatrix('mA',n); const B=getMatrix('mB',n);
+      const out=el('mOut'); const steps=el('mSteps'); steps.textContent='';
+      try{
+        if(op==='add'){ const C=matAdd(A,B); out.innerHTML = `<div class='ok'>A + B</div>${fmtMatrix(C)}`; }
+        else if(op==='sub'){ const C=matSub(A,B); out.innerHTML = `<div class='ok'>A - B</div>${fmtMatrix(C)}`; }
+        else if(op==='mul'){ const C=matMul(A,B); out.innerHTML = `<div class='ok'>A × B</div>${fmtMatrix(C)}`; steps.textContent='C[i,j] = Σ A[i,k]·B[k,j]'; }
+        else if(op==='det'){
+          if(n===2){ const d=det2(A); out.innerHTML = `<div class='ok'>det(A) = ${d}</div>`; steps.textContent='det([a b; c d]) = ad - bc'; }
+          else { const d=det3(A); out.innerHTML = `<div class='ok'>det(A) = ${d}</div>`; steps.textContent='det(A) via rule of Sarrus / cofactor expansion'; }
+        }
+        else if(op==='inv'){
+          if(n===2){ const inv=inv2(A); if(!inv) out.innerHTML = `<div class='error'>Not invertible (det=0)</div>`; else { out.innerHTML = `<div class='ok'>A^{-1}</div>${fmtMatrix(inv)}`; steps.textContent='A^{-1} = (1/det) · [[d,-b],[-c,a]]'; } }
+          else { const inv=inv3(A); if(!inv) out.innerHTML = `<div class='error'>Not invertible (det=0)</div>`; else { out.innerHTML = `<div class='ok'>A^{-1}</div>${fmtMatrix(inv)}`; steps.textContent='A^{-1} = (1/det) · adj(A)'; } }
+        }
+      }catch(e){ out.innerHTML = `<div class='error'>Check inputs</div>`; }
+    });
+
+    // 5) Calculus (simple polynomial parser)
+    function parsePoly(str){
+      // Normalize: replace ^ with ** for JS, split into terms by +/-
+      const s=str.replace(/\s+/g,'').replace(/\^/g,'**').replace(/-/g,'+-');
+      const terms=s.split('+').filter(Boolean);
+      const parsed=terms.map(t=>{
+        // match like 3x**2, 2x, x**3, 5
+        if(/x/.test(t)){
+          let [coef, pow] = t.split('x');
+          if(coef==='' ) coef='1';
+          if(coef==='-') coef='-1';
+          if(pow==='' ) pow='**1';
+          const p = pow.startsWith('**') ? parseFloat(pow.slice(2)) : 1;
+          return { c: parseFloat(coef), p };
+        } else { return { c: parseFloat(t), p: 0 }; }
+      });
+      return parsed;
+    }
+    function polyToString(terms){
+      const parts=terms.map(({c,p})=>{
+        if(!isFinite(c) || c===0) return null;
+        if(p===0) return c.toFixed(4);
+        const coef = (c===1? '': (c===-1? '-': c.toFixed(4))) + 'x';
+        const pow = p===1? '' : `^${p}`;
+        return coef + pow;
+      }).filter(Boolean);
+      return parts.length? parts.join(' + ').replace(/\+ -/g,'- ') : '0';
+    }
+    function derivative(terms){ return terms.map(({c,p})=> ({c: c*p, p: Math.max(0,p-1)})); }
+    function integral(terms){ return terms.map(({c,p})=> ({c: c/(p+1), p: p+1})); }
+
+    el('calcDo').addEventListener('click', ()=>{
+      try{
+        const terms = parsePoly(el('fx').value);
+        const d = derivative(terms);
+        const I = integral(terms);
+        el('calcOut').innerHTML = `<div><strong>f'(x) = ${polyToString(d)}</strong></div><div><strong>∫f(x)dx = ${polyToString(I)} + C</strong></div>`;
+        el('calcSteps').textContent = 'Power rule: d/dx[x^n] = n·x^{n-1},  ∫x^n dx = x^{n+1}/(n+1) + C';
+      }catch(e){ el('calcOut').innerHTML = `<div class='error'>Could not parse function</div>`; }
+    });
+
+    // 6) Statistics
+    el('statsGo').addEventListener('click', ()=>{
+      const nums = el('statsInput').value.split(/[\s,]+/).map(Number).filter(n=>!isNaN(n));
+      if(nums.length===0){ el('statsOut').innerHTML = `<div class='error'>Enter numbers</div>`; return; }
+      nums.sort((a,b)=>a-b);
+      const n = nums.length;
+      const mean = nums.reduce((s,v)=>s+v,0)/n;
+      const median = n%2? nums[(n-1)/2] : (nums[n/2-1]+nums[n/2])/2;
+      const freq = new Map(); nums.forEach(v=>freq.set(v,(freq.get(v)||0)+1));
+      let mode = null, best=0; freq.forEach((c,v)=>{ if(c>best){best=c; mode=v;} });
+      const variance = nums.reduce((s,v)=> s+(v-mean)**2, 0)/n;
+      const std = Math.sqrt(variance);
+      el('statsOut').innerHTML = `Count: ${n}<br>Mean: ${mean.toFixed(4)}<br>Median: ${median}<br>Mode: ${mode}<br>Std Dev: ${std.toFixed(4)}`;
+    });
+
+    // 7) Trigonometry
+    function toRad(val, unit){ return unit==='deg'? val*Math.PI/180 : val; }
+    el('trigGo').addEventListener('click', ()=>{
+      const a = parseFloat(el('angle').value); const unit = el('angleUnit').value;
+      if(!isFinite(a)) { el('trigOut').innerHTML = `<div class='error'>Enter angle</div>`; return; }
+      const r = toRad(a, unit);
+      const s=Math.sin(r), c=Math.cos(r), t=Math.tan(r);
+      el('trigOut').innerHTML = `sin = ${s.toFixed(6)}, cos = ${c.toFixed(6)}, tan = ${t.toFixed(6)}<br>Check: sin² + cos² = ${(s*s + c*c).toFixed(6)}`;
+      drawUnitCircle(r);
+    });
+    function drawUnitCircle(angle){
+      const cv=el('trigCanvas'), ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height);
+      const cx=cv.width/2, cy=cv.height/2, R=120;
+      ctx.strokeStyle='#cbd5e1'; ctx.beginPath(); ctx.arc(cx,cy,R,0,2*Math.PI); ctx.stroke();
+      // axes
+      ctx.beginPath(); ctx.moveTo(cx-R-10, cy); ctx.lineTo(cx+R+10, cy); ctx.moveTo(cx, cy-R-10); ctx.lineTo(cx, cy+R+10); ctx.stroke();
+      // radius line
+      ctx.strokeStyle='#1a1a69'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+R*Math.cos(angle), cy-R*Math.sin(angle)); ctx.stroke();
+    }
+  </script>
+</body>
+</html>

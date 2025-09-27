@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — Social Media & Community Tools</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f8fafc; color:#0f172a; }
+    header { position:sticky; top:0; background:#fff; border-bottom:1px solid #e5e7eb; z-index:10; }
+    header .wrap { max-width: 1100px; margin: 0 auto; display:flex; align-items:center; justify-content:space-between; padding: 12px 16px; }
+    header .brand { display:flex; align-items:center; gap:10px; }
+    header img { height:28px; width:auto; }
+    header h1 { margin:0; font-size:18px; color: var(--brand-primary); }
+
+    main { max-width: 1100px; margin: 16px auto; padding: 0 16px; }
+    .grid { display:grid; gap:12px; grid-template-columns: 1fr; }
+    @media (min-width: 960px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+    .panel { background:#fff; border:1px solid #e5e7eb; border-radius: 14px; padding: 14px; }
+    .panel h2 { margin:0 0 10px 0; font-size: 16px; color: var(--brand-primary); }
+
+    input, textarea, select { width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius: 10px; font-size:14px; }
+    .row { display:grid; gap:10px; grid-template-columns: 1fr; }
+    .btn { cursor:pointer; border:none; padding:10px 12px; border-radius:10px; font-weight:700; color:#fff; background: var(--brand-secondary); }
+    .muted { color:#64748b; }
+    .tag { display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size: 12px; margin: 2px; }
+    .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#ecfeff; color:#155e75; font-size: 12px; margin: 2px; }
+    .table { width:100%; border-collapse: collapse; }
+    .table th, .table td { text-align:left; padding:8px 6px; border-bottom:1px dashed #e5e7eb; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand">
+        <img src="../assets/logo.png" alt="SimHireEstate" />
+        <h1>Social Media & Community Tools</h1>
+      </div>
+      <div class="muted" style="font-size:12px">Frontend only — data saved in your browser.</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <!-- A. Content Planner -->
+      <section class="panel">
+        <h2>Content Planner <span class="pill">LocalStorage</span></h2>
+        <div class="row">
+          <input id="cpTitle" placeholder="Post title" />
+          <textarea id="cpBody" placeholder="Write your post..." rows="5"></textarea>
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <input id="cpDate" type="datetime-local" />
+            <button class="btn" id="cpSave">Save</button>
+            <button class="btn" style="background:#0ea5e9" id="cpClear">Clear All</button>
+          </div>
+        </div>
+        <div id="cpList" style="margin-top:10px"></div>
+      </section>
+
+      <!-- B. Caption & Hashtag Generator -->
+      <section class="panel">
+        <h2>Caption & Hashtag Generator <span class="pill">Dataset</span></h2>
+        <div class="row">
+          <input id="hgTopic" placeholder="Topic e.g., coffee shop" />
+          <button class="btn" id="hgGen">Generate</button>
+        </div>
+        <div id="hgOut" style="margin-top:8px"></div>
+      </section>
+
+      <!-- C. Comment Sentiment Checker -->
+      <section class="panel">
+        <h2>Comment Sentiment Checker</h2>
+        <div class="row">
+          <textarea id="scText" placeholder="Paste a comment..." rows="5"></textarea>
+          <button class="btn" id="scCheck">Check</button>
+        </div>
+        <div id="scOut" style="margin-top:8px"></div>
+      </section>
+
+      <!-- D. Community Poll/Voting App -->
+      <section class="panel">
+        <h2>Community Poll</h2>
+        <div class="row">
+          <input id="pollQ" placeholder="Poll question" />
+          <input id="pollOpts" placeholder="Options (comma separated)" />
+          <button class="btn" id="pollCreate">Create Poll</button>
+        </div>
+        <div id="pollArea" style="margin-top:10px"></div>
+      </section>
+
+      <!-- E. Fake News Spotter -->
+      <section class="panel">
+        <h2>Fake News Spotter</h2>
+        <div class="row">
+          <textarea id="fnText" placeholder="Paste text/article..." rows="5"></textarea>
+          <button class="btn" id="fnCheck">Analyze</button>
+        </div>
+        <div id="fnOut" style="margin-top:8px"></div>
+      </section>
+
+      <!-- F. Simple Meme Generator -->
+      <section class="panel">
+        <h2>Meme Generator</h2>
+        <div class="row">
+          <input type="file" id="memeFile" accept="image/*" />
+          <input id="memeTop" placeholder="Top text" />
+          <input id="memeBottom" placeholder="Bottom text" />
+          <button class="btn" id="memeMake">Make</button>
+          <button class="btn" style="background:#0ea5e9" id="memeDownload">Download PNG</button>
+        </div>
+        <div style="margin-top:8px"><canvas id="memeCanvas" width="560" height="560"></canvas></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    // A) Content Planner
+    const CP_KEY = 'socialPlannerPosts';
+    function loadPosts(){ try { return JSON.parse(localStorage.getItem(CP_KEY)||'[]'); } catch { return []; } }
+    function savePosts(list){ localStorage.setItem(CP_KEY, JSON.stringify(list)); }
+    function renderPosts(){ const list=loadPosts(); const wrap=el('cpList'); if(list.length===0){ wrap.innerHTML = '<div class="muted">No saved posts yet.</div>'; return; }
+      wrap.innerHTML = '<table class="table"><thead><tr><th>Title</th><th>When</th><th>Body</th><th></th></tr></thead><tbody>'+list.map((p,i)=>`<tr><td>${p.title||'-'}</td><td>${p.when||'-'}</td><td>${(p.body||'').slice(0,120)}</td><td><button data-i="${i}" class="del btn" style="background:#ef4444">Delete</button></td></tr>`).join('')+'</tbody></table>';
+      wrap.querySelectorAll('.del').forEach(b=> b.addEventListener('click', e=>{ const i=parseInt(e.target.dataset.i); const arr=loadPosts(); arr.splice(i,1); savePosts(arr); renderPosts(); }));
+    }
+    el('cpSave').addEventListener('click', ()=>{ const arr=loadPosts(); arr.unshift({ title: el('cpTitle').value.trim(), body: el('cpBody').value.trim(), when: el('cpDate').value }); savePosts(arr); renderPosts(); });
+    el('cpClear').addEventListener('click', ()=>{ if(confirm('Clear all saved posts?')) { localStorage.removeItem(CP_KEY); renderPosts(); } });
+    renderPosts();
+
+    // B) Caption & Hashtag Generator (JSON-based dataset)
+    let HASHTAGS = {};
+    async function loadHashtags(){
+      try {
+        const res = await fetch('./hashtags.json');
+        if(res.ok){ HASHTAGS = await res.json(); }
+      } catch(e){ console.warn('hashtags.json not loaded, using fallback'); HASHTAGS = { general:['#simhireestate','#rwanda','#community','#growth'] }; }
+    }
+    loadHashtags();
+    el('hgGen').addEventListener('click', ()=>{
+      const topic = el('hgTopic').value.trim().toLowerCase();
+      const keys = Object.keys(HASHTAGS);
+      if(keys.length===0){ el('hgOut').textContent = 'Dataset not loaded'; return; }
+      let best = keys.find(k=> topic.includes(k)) || keys[0];
+      const tags = HASHTAGS[best] || [];
+      const caption = `Post idea about ${topic||best}. ` + (tags.slice(0,3).join(' ') || '');
+      el('hgOut').innerHTML = `<div><strong>Suggested caption:</strong><br>${caption}</div><div style="margin-top:6px">` + tags.map(t=>`<span class="tag">${t}</span>`).join(' ') + '</div>';
+    });
+
+    // C) Sentiment Checker (simple word lists)
+    const POS=['good','great','love','excellent','happy','best','amazing','thanks'];
+    const NEG=['bad','terrible','hate','angry','worst','awful','scam'];
+    el('scCheck').addEventListener('click', ()=>{
+      const text = el('scText').value.toLowerCase();
+      const pos = POS.reduce((s,w)=> s+(text.includes(w)?1:0), 0);
+      const neg = NEG.reduce((s,w)=> s+(text.includes(w)?1:0), 0);
+      const tone = neg>pos? 'Negative' : pos>neg? 'Positive' : 'Neutral';
+      el('scOut').innerHTML = `<div><strong>Sentiment:</strong> ${tone}</div><div class="muted">(Heuristic using keyword matches)</div>`;
+    });
+
+    // D) Poll
+    const POLL_KEY='communityPoll';
+    function loadPoll(){ try { return JSON.parse(localStorage.getItem(POLL_KEY)||'null'); } catch { return null; } }
+    function savePoll(p){ localStorage.setItem(POLL_KEY, JSON.stringify(p)); }
+    function renderPoll(){ const p=loadPoll(); const area=el('pollArea'); if(!p){ area.innerHTML='<div class="muted">No poll yet.</div>'; return; }
+      area.innerHTML = `<div style="font-weight:600">${p.q}</div>` + p.opts.map((o,i)=>{
+        const count=p.votes[i]||0; const total=p.votes.reduce((a,b)=>a+b,0)||1; const pct=((count/total)*100).toFixed(0);
+        return `<div style=\"margin:6px 0\"><button class=\"btn vote\" data-i=\"${i}\">Vote</button> ${o} — ${count} votes <div style=\"height:8px;background:#eef2ff;border-radius:6px;margin-top:4px\"><div style=\"height:8px;width:${pct}%;background:#1a1a69;border-radius:6px\"></div></div></div>`;
+      }).join('');
+      area.querySelectorAll('.vote').forEach(b=> b.addEventListener('click', e=>{ const i=parseInt(e.target.dataset.i); const p=loadPoll(); p.votes[i]++; savePoll(p); renderPoll(); }));
+    }
+    el('pollCreate').addEventListener('click', ()=>{
+      const q=el('pollQ').value.trim(); const opts=el('pollOpts').value.split(',').map(s=>s.trim()).filter(Boolean);
+      if(!q || opts.length<2) { alert('Enter a question and at least two options'); return; }
+      savePoll({ q, opts, votes: Array(opts.length).fill(0) }); renderPoll();
+    });
+    renderPoll();
+
+    // E) Fake News Spotter
+    const SUSPICIOUS=['shocking','you won','100% guaranteed','click here','urgent','limited time','miracle','secret','scam'];
+    el('fnCheck').addEventListener('click', ()=>{
+      const text = el('fnText').value; if(!text){ el('fnOut').innerHTML = '<div class="muted">Enter some text</div>'; return; }
+      let highlighted = text; let hits=0;
+      SUSPICIOUS.forEach(k=>{ const re=new RegExp(k,'ig'); highlighted = highlighted.replace(re, m=>{ hits++; return `<mark style=\"background:#fde68a\">${m}</mark>`; }); });
+      el('fnOut').innerHTML = `<div><strong>Findings:</strong> ${hits} suspicious keyword(s)</div><div style="margin-top:6px">${highlighted}</div>`;
+    });
+
+    // F) Meme Generator
+    let memeImg=null;
+    el('memeFile').addEventListener('change', (e)=>{ const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ memeImg=new Image(); memeImg.onload=()=> drawMeme(); memeImg.src=r.result; }; r.readAsDataURL(f); });
+    function drawMeme(){ const cv=el('memeCanvas'), ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height); if(!memeImg) return; const ratio=Math.min(cv.width/memeImg.width, cv.height/memeImg.height); const w=memeImg.width*ratio, h=memeImg.height*ratio; const x=(cv.width-w)/2, y=(cv.height-h)/2; ctx.drawImage(memeImg,x,y,w,h); const top=el('memeTop').value.toUpperCase(); const bottom=el('memeBottom').value.toUpperCase(); ctx.font='32px Impact, Arial Black, sans-serif'; ctx.fillStyle='#fff'; ctx.strokeStyle='#000'; ctx.lineWidth=4; ctx.textAlign='center'; if(top){ ctx.strokeText(top, cv.width/2, 40); ctx.fillText(top, cv.width/2, 40); } if(bottom){ ctx.strokeText(bottom, cv.width/2, cv.height-20); ctx.fillText(bottom, cv.width/2, cv.height-20); } }
+    ['memeTop','memeBottom'].forEach(id=> el(id).addEventListener('input', drawMeme));
+    el('memeMake').addEventListener('click', drawMeme);
+    el('memeDownload').addEventListener('click', ()=>{ const a=document.createElement('a'); a.href=el('memeCanvas').toDataURL('image/png'); a.download='meme.png'; a.click(); });
+  </script>
+</body>
+</html>

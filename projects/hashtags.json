@@ -1,0 +1,10 @@
+{
+  "coffee": ["#coffee", "#coffeelover", "#morningvibes", "#cafetime", "#rwandacoffee", "#kigalilife", "#espresso", "#latte"],
+  "food": ["#foodie", "#yum", "#localflavors", "#rwandancuisine", "#tasty", "#streetfood", "#homemade"],
+  "travel": ["#travel", "#explorerwanda", "#adventure", "#africatravel", "#discoverkigali", "#nature", "#roadtrip"],
+  "tech": ["#tech", "#devlife", "#coding", "#innovation", "#rwandatech", "#webdev", "#startup"],
+  "shop": ["#shoplocal", "#smallbusiness", "#supportlocal", "#marketday", "#madeinrwanda", "#localbrand"],
+  "fashion": ["#fashion", "#style", "#africanfashion", "#kigalistyle", "#ootd"],
+  "fitness": ["#fitness", "#health", "#workout", "#runrwanda", "#gym"],
+  "education": ["#education", "#learn", "#students", "#study", "#edtech"]
+}

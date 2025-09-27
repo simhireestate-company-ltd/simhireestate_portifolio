@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimHireEstate Background Remover & Editor</title>
+    <link rel="icon" href="../assets/logo.png" />
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#063F5E">
+    <style>
+    :root { --brand-primary: #063F5E; --brand-secondary: #1a1a69; }
+    </style>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f4f4f9;
+            color: #333;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .dark-mode {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: var(--brand-primary);
+        }
+
+        .toggle-mode {
+            background: var(--brand-secondary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .toggle-mode:hover {
+            transform: scale(1.05);
+        }
+
+        .editor {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            position: relative;
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            border: 1px solid #ddd;
+        }
+
+        .preview {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+        }
+
+        .tools {
+            width: 250px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .tools h3 {
+            margin-bottom: 10px;
+        }
+
+        .tool-group {
+            margin-bottom: 20px;
+        }
+
+        .tool-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .tool-group select,
+        .tool-group button,
+        .tool-group input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--brand-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #f8f8ff;
+            transition: border-color 0.3s, background 0.3s;
+            cursor: pointer;
+        }
+
+        .drop-zone.dragover {
+            border-color: #00c4b4;
+            background: #e0f7fa;
+        }
+
+        .dark-mode .drop-zone {
+            background: #2a2a2a;
+            border-color: #888;
+        }
+
+        .dark-mode .drop-zone.dragover {
+            border-color: #00c4b4;
+            background: #37474f;
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--brand-secondary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .crop-rect {
+            position: absolute;
+            border: 2px dashed var(--brand-secondary);
+            background: rgba(26, 26, 105, 0.1);
+            display: none;
+        }
+
+        .crop-handle {
+            width: 10px;
+            height: 10px;
+            background: var(--brand-secondary);
+            position: absolute;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--brand-primary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .gallery img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+
+        .gallery img:hover {
+            transform: scale(1.1);
+        }
+
+        .dark-mode .canvas-container,
+        .dark-mode .tools,
+        .dark-mode .preview {
+            background: #2a2a2a;
+            border: 1px solid #444;
+        }
+
+        .dark-mode canvas {
+            border: 1px solid #444;
+        }
+
+        @media (max-width: 768px) {
+            .editor {
+                flex-direction: column;
+            }
+
+            .tools {
+                width: 100%;
+            }
+
+            .preview {
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="display:flex; align-items:center; gap:10px">
+              <img src="../assets/logo.png" alt="SimHireEstate" style="height:32px; width:auto"/>
+              <h1>SimHireEstate Background Remover & Editor</h1>
+            </div>
+            <button class="toggle-mode" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+        </div>
+
+        <div class="editor">
+            <div class="canvas-container">
+                <canvas id="editorCanvas"></canvas>
+                <canvas id="previewCanvas" class="preview"></canvas>
+                <div id="loading" class="loading"></div>
+                <div id="cropRect" class="crop-rect">
+                    <div class="crop-handle" style="top: -5px; left: -5px;"></div>
+                    <div class="crop-handle" style="top: -5px; right: -5px;"></div>
+                    <div class="crop-handle" style="bottom: -5px; left: -5px;"></div>
+                    <div class="crop-handle" style="bottom: -5px; right: -5px;"></div>
+                </div>
+            </div>
+            <div class="tools">
+                <h3>Tools</h3>
+                <div class="tool-group">
+                    <label>Drag & Drop or Click to Upload Image</label>
+                    <div class="drop-zone" id="dropZone">Drop your image here or click to select</div>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                </div>
+                <div class="tool-group">
+                    <label for="filter">Apply Filter</label>
+                    <select id="filter">
+                        <option value="none">None</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="sepia">Sepia</option>
+                        <option value="blur">Blur</option>
+                        <option value="brightness">Brightness</option>
+                        <option value="contrast">Contrast</option>
+                        <option value="invert">Invert</option>
+                        <option value="hue-rotate">Hue Rotate</option>
+                        <option value="saturate">Saturate</option>
+                    </select>
+                    <input type="range" id="filterIntensity" min="0" max="100" value="100">
+                </div>
+                <div class="tool-group">
+                    <button onclick="removeBackground()">Remove Background</button>
+                    <button onclick="toggleCropTool()">Crop Image</button>
+                    <button onclick="applyCrop()">Apply Crop</button>
+                </div>
+                <div class="tool-group">
+                    <label for="exportQuality">Export Quality</label>
+                    <select id="exportQuality">
+                        <option value="0.3">Low</option>
+                        <option value="0.6">Medium</option>
+                        <option value="1.0" selected>High</option>
+                    </select>
+                </div>
+                <div class="tool-group">
+                    <label for="exportFormat">Export Format</label>
+                    <select id="exportFormat">
+                        <option value="image/png">PNG (transparent)</option>
+                        <option value="image/jpeg" selected>JPEG</option>
+                        <option value="image/webp">WEBP</option>
+                    </select>
+                    <button onclick="downloadImage()" aria-label="Download edited image">Download Image</button>
+                </div>
+                <div class="tool-group">
+                    <button onclick="undo()" aria-label="Undo last action">Undo (Ctrl+Z)</button>
+                    <button onclick="saveImage()" aria-label="Save to gallery">Save to Gallery (Ctrl+S)</button>
+                </div>
+            </div>
+        </div>
+
+        <h2>Gallery</h2>
+        <div class="gallery" id="gallery"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('editorCanvas');
+        const ctx = canvas.getContext('2d');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const previewCtx = previewCanvas.getContext('2d');
+        const dropZone = document.getElementById('dropZone');
+        const imageUpload = document.getElementById('imageUpload');
+        const filterSelect = document.getElementById('filter');
+        const filterIntensity = document.getElementById('filterIntensity');
+        const exportQuality = document.getElementById('exportQuality');
+        const exportFormat = document.getElementById('exportFormat');
+        const gallery = document.getElementById('gallery');
+        const loading = document.getElementById('loading');
+        const cropRect = document.getElementById('cropRect');
+        let currentImage = new Image();
+        let history = [];
+        let historyIndex = -1;
+        let isCropping = false;
+        let cropStart = { x: 0, y: 0, width: 0, height: 0 };
+
+        // Initialize canvases
+        canvas.width = 600;
+        canvas.height = 400;
+        previewCanvas.width = 100;
+        previewCanvas.height = 100;
+
+        // Drag-and-drop handling
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        // Click to open file explorer
+        dropZone.addEventListener('click', () => {
+            imageUpload.click();
+        });
+
+        imageUpload.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    currentImage.src = reader.result;
+                    currentImage.onload = () => {
+                        canvas.width = currentImage.width;
+                        canvas.height = currentImage.height;
+                        ctx.drawImage(currentImage, 0, 0);
+                        updatePreview();
+                        saveToHistory();
+                    };
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Please select a valid image file.');
+            }
+        }
+
+        // Apply filter with intensity
+        filterSelect.addEventListener('change', applyFilter);
+        filterIntensity.addEventListener('input', applyFilter);
+
+        function applyFilter() {
+            const filter = filterSelect.value;
+            const intensity = filterIntensity.value / 100;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.filter = getFilterStyle(filter, intensity);
+            ctx.drawImage(currentImage, 0, 0);
+            updatePreview();
+            saveToHistory();
+        }
+
+        function getFilterStyle(filter, intensity) {
+            switch (filter) {
+                case 'grayscale': return `grayscale(${intensity * 100}%)`;
+                case 'sepia': return `sepia(${intensity * 100}%)`;
+                case 'blur': return `blur(${intensity * 5}px)`;
+                case 'brightness': return `brightness(${1 + intensity}%)`;
+                case 'contrast': return `contrast(${1 + intensity}%)`;
+                case 'invert': return `invert(${intensity * 100}%)`;
+                case 'hue-rotate': return `hue-rotate(${intensity * 360}deg)`;
+                case 'saturate': return `saturate(${1 + intensity}%)`;
+                default: return 'none';
+            }
+        }
+
+        // Real-time preview
+        function updatePreview() {
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            previewCtx.filter = ctx.filter;
+            previewCtx.drawImage(currentImage, 0, 0, previewCanvas.width, previewCanvas.height);
+        }
+
+        // Remove background with remove.bg API
+        async function removeBackground() {
+            if (!currentImage.src) {
+                alert('Please upload an image first.');
+                return;
+            }
+            loading.style.display = 'block';
+            try {
+                const formData = new FormData();
+                const blob = await fetch(currentImage.src).then(res => res.blob());
+                formData.append('image_file', blob);
+                const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+                    method: 'POST',
+                    headers: {
+                        'X-Api-Key': 'jYe1GTD95LHcwW1st2GSCjtG'
+                    },
+                    body: formData
+                });
+                if (!response.ok) throw new Error('API request failed');
+                const resultBlob = await response.blob();
+                currentImage.src = URL.createObjectURL(resultBlob);
+                currentImage.onload = () => {
+                    canvas.width = currentImage.width;
+                    canvas.height = currentImage.height;
+                    ctx.drawImage(currentImage, 0, 0);
+                    updatePreview();
+                    saveToHistory();
+                };
+            } catch (error) {
+                alert('Error removing background: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Crop tool
+        function toggleCropTool() {
+            isCropping = !isCropping;
+            cropRect.style.display = isCropping ? 'block' : 'none';
+            if (isCropping) {
+                const rect = canvas.getBoundingClientRect();
+                cropStart = {
+                    x: rect.left + 50,
+                    y: rect.top + 50,
+                    width: canvas.width - 100,
+                    height: canvas.height - 100
+                };
+                updateCropRect();
+            }
+        }
+
+        function updateCropRect() {
+            cropRect.style.left = cropStart.x + 'px';
+            cropRect.style.top = cropStart.y + 'px';
+            cropRect.style.width = cropStart.width + 'px';
+            cropRect.style.height = cropStart.height + 'px';
+        }
+
+        function applyCrop() {
+            if (!isCropping) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (cropStart.x - rect.left) * scaleX;
+            const y = (cropStart.y - rect.top) * scaleY;
+            const width = cropStart.width * scaleX;
+            const height = cropStart.height * scaleY;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            tempCanvas.getContext('2d').drawImage(canvas, x, y, width, height, 0, 0, width, height);
+            currentImage.src = tempCanvas.toDataURL();
+            currentImage.onload = () => {
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(currentImage, 0, 0);
+                toggleCropTool();
+                updatePreview();
+                saveToHistory();
+            };
+        }
+
+        // Crop rectangle dragging
+        let isDragging = false;
+        let currentHandle = null;
+        cropRect.addEventListener('mousedown', (e) => {
+            const handles = cropRect.querySelectorAll('.crop-handle');
+            handles.forEach((handle, i) => {
+                if (e.target === handle) {
+                    isDragging = true;
+                    currentHandle = i;
+                }
+            });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                let x = e.clientX;
+                let y = e.clientY;
+                if (currentHandle === 0) {
+                    cropStart.width += cropStart.x - x;
+                    cropStart.height += cropStart.y - y;
+                    cropStart.x = x;
+                    cropStart.y = y;
+                } else if (currentHandle === 1) {
+                    cropStart.width = x - cropStart.x;
+                    cropStart.height += cropStart.y - y;
+                    cropStart.y = y;
+                } else if (currentHandle === 2) {
+                    cropStart.width += cropStart.x - x;
+                    cropStart.x = x;
+                    cropStart.height = y - cropStart.y;
+                } else if (currentHandle === 3) {
+                    cropStart.width = x - cropStart.x;
+                    cropStart.height = y - cropStart.y;
+                }
+                cropStart.width = Math.max(50, cropStart.width);
+                cropStart.height = Math.max(50, cropStart.height);
+                updateCropRect();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            currentHandle = null;
+        });
+
+        // Undo
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                restoreFromHistory();
+            }
+        }
+
+        // Save to history
+        function saveToHistory() {
+            history = history.slice(0, historyIndex + 1);
+            history.push(canvas.toDataURL());
+            historyIndex++;
+        }
+
+        // Restore from history
+        function restoreFromHistory() {
+            const img = new Image();
+            img.src = history[historyIndex];
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                currentImage.src = img.src;
+                updatePreview();
+            };
+        }
+
+        // Save to gallery
+        function saveImage() {
+            const quality = parseFloat(exportQuality.value);
+            const fmt = exportFormat ? exportFormat.value : 'image/jpeg';
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL(fmt, quality);
+            img.alt = 'Edited Image';
+            gallery.prepend(img);
+        }
+
+        // Download edited image
+        function downloadImage() {
+            const quality = parseFloat(exportQuality.value);
+            const fmt = exportFormat ? exportFormat.value : 'image/jpeg';
+            const dataUrl = canvas.toDataURL(fmt, quality);
+            const link = document.createElement('a');
+            const ext = fmt.includes('png') ? 'png' : fmt.includes('webp') ? 'webp' : 'jpg';
+            link.download = `simhireestate_edited.${ext}`;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            }
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveImage();
+            }
+        });
+
+        // Gesture support (pinch to zoom)
+        let scale = 1;
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                canvas.dataset.initialDist = dist;
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                const initialDist = parseFloat(canvas.dataset.initialDist);
+                scale = Math.max(0.5, Math.min(2, scale * (dist / initialDist)));
+                canvas.style.transform = `scale(${scale})`;
+                canvas.dataset.initialDist = dist;
+            }
+        });
+
+        // PWA service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.error('Service Worker registration failed:', err));
+        }
+    </script>
+</body>
+</html>

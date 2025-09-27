@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Compressor — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { primary: '#063F5E', secondary: '#1a1a69' } } } } };
+  </script>
+  <style>
+    :root{ --brand-primary:#063F5E; --brand-secondary:#1a1a69 }
+    .drop-active { border-color: #1a1a69 !important; background: #f8fafc !important; }
+  </style>
+</head>
+<body class="min-h-screen bg-white text-slate-800">
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold" style="color:var(--brand-primary)">Image Compressor</h1>
+      <a href="../projects.html" class="text-sm text-white px-3 py-2 rounded" style="background:var(--brand-secondary)">Back</a>
+    </header>
+
+    <section class="p-4 border rounded-lg bg-white">
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="md:col-span-2 space-y-3">
+          <div id="drop" class="flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-lg p-6">
+            <div class="text-sm text-slate-600">Drag & drop an image here or</div>
+            <input id="file" type="file" accept="image/*" class="hidden" />
+            <button id="fileBtn" class="px-4 py-2 text-white rounded" style="background:var(--brand-secondary)">Choose Image</button>
+            <div id="fileInfo" class="text-xs text-slate-500"></div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+            <label class="text-sm">Output Format
+              <select id="format" class="mt-1 w-full border rounded px-3 py-2">
+                <option value="image/jpeg">JPEG (.jpg)</option>
+                <option value="image/webp">WebP (.webp)</option>
+                <option value="image/png">PNG (.png)</option>
+              </select>
+            </label>
+            <label class="text-sm">Quality <span id="qVal" class="text-slate-500">90%</span>
+              <input id="quality" type="range" min="10" max="100" step="1" value="90" class="mt-1 w-full" />
+            </label>
+            <div class="sm:col-span-2 grid sm:grid-cols-4 gap-3 items-end">
+              <label class="text-sm flex items-center gap-2"><input id="resizeToggle" type="checkbox" class="accent-[var(--brand-secondary)]" /> Resize</label>
+              <label class="text-sm">Max Width
+                <input id="maxW" type="number" class="mt-1 w-full border rounded px-3 py-2" placeholder="e.g., 1600" />
+              </label>
+              <label class="text-sm">Max Height
+                <input id="maxH" type="number" class="mt-1 w-full border rounded px-3 py-2" placeholder="e.g., 1200" />
+              </label>
+              <label class="text-sm">Background (for JPEG)
+                <input id="bg" type="color" class="mt-1 w-full border rounded px-2 py-1" value="#ffffff" />
+              </label>
+            </div>
+            <div class="sm:col-span-2 grid sm:grid-cols-2 gap-3">
+              <label class="text-sm">Filename (no extension)
+                <input id="fname" class="mt-1 w-full border rounded px-3 py-2" placeholder="compressed" />
+              </label>
+              <div class="flex items-end gap-3">
+                <button id="go" class="flex-1 px-4 py-2 text-white rounded" style="background:var(--brand-secondary)">Compress</button>
+                <button id="autoBtn" class="px-4 py-2 border rounded" title="Auto compress when options change">Auto: Off</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="space-y-3">
+          <div class="p-3 bg-slate-50 rounded border">
+            <div class="font-semibold mb-1" style="color:var(--brand-primary)">Stats</div>
+            <ul class="text-sm space-y-1">
+              <li>Original: <span id="osize" class="text-slate-600">—</span></li>
+              <li>Dimensions: <span id="odim" class="text-slate-600">—</span></li>
+              <li>Compressed: <span id="csize" class="text-slate-600">—</span></li>
+              <li>Dimensions: <span id="cdim" class="text-slate-600">—</span></li>
+              <li>Reduction: <span id="reduct" class="text-slate-600">—</span></li>
+            </ul>
+          </div>
+          <div class="text-xs text-slate-500">
+            Tips:
+            <ul class="list-disc pl-4 mt-1 space-y-1">
+              <li>Use WebP for best quality/size balance.</li>
+              <li>PNG ignores quality; great for graphics with transparency.</li>
+              <li>JPEG has no transparency — a background color will be applied.</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+
+      <div class="mt-6 grid md:grid-cols-2 gap-4">
+        <div>
+          <h3 class="font-semibold mb-2">Original</h3>
+          <img id="orig" class="max-w-full border rounded" alt="Original preview" />
+        </div>
+        <div>
+          <h3 class="font-semibold mb-2">Compressed</h3>
+          <img id="comp" class="max-w-full border rounded" alt="Compressed preview" />
+          <div class="mt-2 flex gap-2">
+            <a id="download" class="inline-block px-3 py-2 text-white rounded" style="background:var(--brand-secondary)" download>Download</a>
+            <button id="copyBtn" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Copy Image</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = sel => document.querySelector(sel);
+    const fileInput = $('#file');
+    const fileBtn = $('#fileBtn');
+    const drop = $('#drop');
+    const fileInfo = $('#fileInfo');
+    const quality = $('#quality');
+    const qVal = $('#qVal');
+    const formatSel = $('#format');
+    const resizeToggle = $('#resizeToggle');
+    const maxW = $('#maxW');
+    const maxH = $('#maxH');
+    const bgColor = $('#bg');
+    const fname = $('#fname');
+    const osizeEl = $('#osize');
+    const odimEl = $('#odim');
+    const csizeEl = $('#csize');
+    const cdimEl = $('#cdim');
+    const reductEl = $('#reduct');
+    const origImg = $('#orig');
+    const compImg = $('#comp');
+    const downloadA = $('#download');
+    const copyBtn = $('#copyBtn');
+    const goBtn = $('#go');
+    const autoBtn = $('#autoBtn');
+
+    let currentFile = null;
+    let auto = false;
+
+    function bytes(n){ if(!n && n!==0) return '—'; const kb=n/1024; if(kb<1024) return kb.toFixed(1)+' KB'; return (kb/1024).toFixed(2)+' MB'; }
+
+    function enableControls(){
+      const fmt = formatSel.value;
+      // PNG quality is ignored by browsers; disable visually
+      quality.disabled = (fmt === 'image/png');
+      qVal.textContent = (fmt === 'image/png') ? 'n/a' : quality.value + '%';
+      bgColor.disabled = (fmt !== 'image/jpeg');
+    }
+
+    function readFile(f){
+      return new Promise((res, rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); });
+    }
+
+    function drawToCanvas(img, options){
+      // Compute target dimensions respecting max constraints
+      let { maxWidth, maxHeight, background, outType, outQuality } = options;
+      let tw = img.width, th = img.height;
+      if (resizeToggle.checked && (maxWidth || maxHeight)){
+        maxWidth = parseInt(maxWidth||0,10) || Infinity;
+        maxHeight = parseInt(maxHeight||0,10) || Infinity;
+        const scale = Math.min(maxWidth / tw, maxHeight / th);
+        if (isFinite(scale) && scale < 1){ tw = Math.max(1, Math.floor(tw*scale)); th = Math.max(1, Math.floor(th*scale)); }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = tw; canvas.height = th;
+      const ctx = canvas.getContext('2d');
+      // For JPEG, fill background to remove transparency
+      if (outType === 'image/jpeg'){
+        ctx.fillStyle = background || '#ffffff';
+        ctx.fillRect(0,0,tw,th);
+      } else {
+        ctx.clearRect(0,0,tw,th);
+      }
+      ctx.drawImage(img, 0, 0, tw, th);
+      return new Promise((resolve)=>{
+        // quality: convert 0-100 to 0-1
+        const q = Math.max(0.1, Math.min(1, (outQuality||90)/100));
+        canvas.toBlob((blob)=> resolve({ blob, width: tw, height: th }), outType, q);
+      });
+    }
+
+    async function updateCompression(){
+      if(!currentFile) return;
+      const dataURL = await readFile(currentFile);
+      origImg.src = dataURL;
+      osizeEl.textContent = 'Size: ' + bytes(currentFile.size);
+      // Load image element
+      const img = new Image();
+      await new Promise((res)=>{ img.onload = res; img.src = dataURL; });
+      odimEl.textContent = img.width + ' × ' + img.height;
+
+      const outType = formatSel.value;
+      const outQuality = parseInt(quality.value, 10);
+      const background = bgColor.value;
+      const { blob, width, height } = await drawToCanvas(img, {
+        maxWidth: maxW.value, maxHeight: maxH.value, background, outType, outQuality
+      });
+      const url = URL.createObjectURL(blob);
+      compImg.src = url;
+      csizeEl.textContent = 'Size: ' + bytes(blob.size);
+      cdimEl.textContent = width + ' × ' + height;
+      if(currentFile.size && blob.size){
+        const pct = Math.max(0, (1 - (blob.size / currentFile.size)) * 100).toFixed(1);
+        reductEl.textContent = pct + '% smaller';
+      } else {
+        reductEl.textContent = '—';
+      }
+      const base = (fname.value.trim() || 'compressed');
+      const ext = outType==='image/png'?'png':outType==='image/webp'?'webp':'jpg';
+      downloadA.href = url; downloadA.download = `${base}.${ext}`;
+    }
+
+    // Events
+    fileBtn.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', ()=>{
+      currentFile = fileInput.files[0] || null;
+      if(!currentFile) return;
+      fileInfo.textContent = `${currentFile.name} • ${bytes(currentFile.size)}`;
+      const base = currentFile.name.replace(/\.[^.]+$/, '');
+      if(!fname.value) fname.value = `${base}-compressed`;
+      updateCompression();
+    });
+
+    // Drag & drop
+    ['dragenter','dragover'].forEach(ev=> drop.addEventListener(ev, (e)=>{ e.preventDefault(); e.stopPropagation(); drop.classList.add('drop-active'); }));
+    ;['dragleave','drop'].forEach(ev=> drop.addEventListener(ev, (e)=>{ e.preventDefault(); e.stopPropagation(); if(ev==='drop'){ const f=e.dataTransfer.files?.[0]; if(f && f.type.startsWith('image/')){ currentFile=f; fileInfo.textContent=`${f.name} • ${bytes(f.size)}`; const base=f.name.replace(/\.[^.]+$/, ''); if(!fname.value) fname.value=`${base}-compressed`; updateCompression(); } } drop.classList.remove('drop-active'); }));
+
+    // Option changes
+    function maybeAuto(){ if(auto) updateCompression(); }
+    quality.addEventListener('input', ()=>{ qVal.textContent = quality.disabled? 'n/a' : quality.value+ '%'; maybeAuto(); });
+    formatSel.addEventListener('change', ()=>{ enableControls(); maybeAuto(); });
+    [resizeToggle, maxW, maxH, bgColor, fname].forEach(el=> el.addEventListener('input', maybeAuto));
+
+    goBtn.addEventListener('click', updateCompression);
+
+    autoBtn.addEventListener('click', ()=>{ auto = !auto; autoBtn.textContent = `Auto: ${auto? 'On':'Off'}`; if(auto) updateCompression(); });
+
+    // Copy to clipboard (where supported)
+    copyBtn.addEventListener('click', async ()=>{
+      try{
+        if(!compImg.src) return;
+        const r = await fetch(compImg.src); const b = await r.blob();
+        await navigator.clipboard.write([ new ClipboardItem({ [b.type]: b }) ]);
+        copyBtn.textContent = 'Copied!'; setTimeout(()=> copyBtn.textContent='Copy Image', 1200);
+      }catch(e){ alert('Copy not supported in this browser.'); }
+    });
+
+    enableControls();
+  </script>
+</body>
+</html>

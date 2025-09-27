@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Text-to-Speech Reader — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { primary: '#063F5E', secondary: '#1a1a69', gray: '#6B7280' } } } } };
+  </script>
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    html{scroll-behavior:smooth}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-white text-slate-800">
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-100">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <a href="../index.html" class="flex items-center gap-2"><img src="../assets/logo.png" class="h-8" alt="logo"><span class="font-semibold" style="color:var(--brand-primary)">SimHireEstate</span></a>
+      <a href="../projects.html" class="text-sm hover:text-brand-secondary">Back to Projects</a>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <section class="bg-gradient-to-br from-brand-primary to-brand-secondary text-white">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 class="text-2xl font-bold">Text-to-Speech Reader</h1>
+        <p class="text-slate-100">Paste text and listen with adjustable voice, rate, and pitch.</p>
+      </div>
+    </section>
+
+    <section class="py-8">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="p-5 bg-white border border-slate-200 rounded-lg">
+          <textarea id="text" rows="8" class="w-full border border-slate-200 rounded-md p-3" placeholder="Enter text to read..."></textarea>
+          <div class="mt-3 grid sm:grid-cols-3 gap-3">
+            <label class="text-sm">Voice
+              <select id="voices" class="mt-1 w-full border border-slate-200 rounded-md px-2 py-1"></select>
+            </label>
+            <label class="text-sm">Rate
+              <input id="rate" type="range" min="0.5" max="2" step="0.1" value="1" class="mt-1 w-full"/>
+            </label>
+            <label class="text-sm">Pitch
+              <input id="pitch" type="range" min="0" max="2" step="0.1" value="1" class="mt-1 w-full"/>
+            </label>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <button id="speak" class="px-3 py-2 rounded-md text-white" style="background:var(--brand-secondary)">Speak</button>
+            <button id="pause" class="px-3 py-2 rounded-md border border-slate-200">Pause</button>
+            <button id="resume" class="px-3 py-2 rounded-md border border-slate-200">Resume</button>
+            <button id="cancel" class="px-3 py-2 rounded-md border border-slate-200">Stop</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-100">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-slate-600 flex items-center justify-between">
+      <span>© <span id="year"></span> SimHireEstate</span>
+      <a class="hover:text-brand-secondary" href="../contact.html">Contact</a>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const synth = window.speechSynthesis;
+    const text = document.getElementById('text');
+    const voicesSel = document.getElementById('voices');
+    const rate = document.getElementById('rate');
+    const pitch = document.getElementById('pitch');
+
+    function loadVoices(){
+      const voices = synth.getVoices();
+      voicesSel.innerHTML = voices.map((v,i)=>`<option value="${i}">${v.name} — ${v.lang}</option>`).join('');
+    }
+    loadVoices();
+    if (typeof speechSynthesis !== 'undefined') {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    let utter = null;
+    document.getElementById('speak').addEventListener('click', ()=>{
+      if(!text.value.trim()) return;
+      utter = new SpeechSynthesisUtterance(text.value);
+      const voices = synth.getVoices();
+      const idx = +voicesSel.value || 0;
+      if(voices[idx]) utter.voice = voices[idx];
+      utter.rate = +rate.value; utter.pitch = +pitch.value;
+      synth.cancel();
+      synth.speak(utter);
+    });
+    document.getElementById('pause').addEventListener('click', ()=> synth.pause());
+    document.getElementById('resume').addEventListener('click', ()=> synth.resume());
+    document.getElementById('cancel').addEventListener('click', ()=> synth.cancel());
+  </script>
+</body>
+</html>

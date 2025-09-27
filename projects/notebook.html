@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Digital Notebook — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:{primary:'#063F5E',secondary:'#1a1a69'}}}}}</script>
+  <style>:root{--brand-primary:#063F5E;--brand-secondary:#1a1a69}</style>
+</head>
+<body class="min-h-screen bg-white text-slate-800">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold" style="color:var(--brand-primary)">Digital Notebook</h1>
+      <div class="flex items-center gap-2">
+        <button id="theme" class="px-3 py-1.5 border rounded text-sm" style="border-color:#E5E7EB">Theme</button>
+        <a href="../projects.html" class="text-sm text-white px-3 py-2 rounded" style="background:var(--brand-secondary)">Back</a>
+      </div>
+    </header>
+
+    <div class="grid lg:grid-cols-3 gap-6">
+      <!-- Sidebar: notes list -->
+      <aside class="p-4 border rounded-lg bg-white">
+        <div class="flex items-center gap-2">
+          <input id="search" placeholder="Search notes..." class="flex-1 border rounded px-3 py-2 text-sm" />
+          <button id="newNote" class="px-3 py-2 text-white rounded text-sm" style="background:var(--brand-secondary)">New</button>
+        </div>
+        <ul id="list" class="mt-3 max-h-[60vh] overflow-auto text-sm divide-y"></ul>
+      </aside>
+
+      <!-- Editor -->
+      <section class="lg:col-span-2 p-4 border rounded-lg bg-white">
+        <div class="flex items-center gap-2">
+          <input id="title" placeholder="Untitled" class="flex-1 border rounded px-3 py-2" />
+          <span id="status" class="text-slate-500 text-sm">Ready</span>
+          <button id="del" class="px-3 py-2 border rounded text-sm text-red-600 border-red-200">Delete</button>
+          <button id="exportTxt" class="px-3 py-2 border rounded text-sm" style="border-color:#E5E7EB">Export .txt</button>
+          <label class="px-3 py-2 border rounded text-sm cursor-pointer" style="border-color:#E5E7EB">Import .txt
+            <input id="importTxt" type="file" accept="text/plain" class="hidden" />
+          </label>
+        </div>
+        <textarea id="note" class="mt-3 w-full h-[60vh] border rounded px-3 py-2" placeholder="Write your notes here..."></textarea>
+        <div class="mt-2 text-xs text-slate-600">Words: <span id="words">0</span> • Characters: <span id="chars">0</span></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const KEY='notebook:notes:v1';
+    const $=s=>document.querySelector(s);
+    const list=$('#list'); const search=$('#search'); const newNoteBtn=$('#newNote');
+    const titleInp=$('#title'); const noteArea=$('#note'); const status=$('#status');
+    const delBtn=$('#del'); const exportBtn=$('#exportTxt'); const importTxt=$('#importTxt'); const themeBtn=$('#theme');
+    const wordsEl=$('#words'); const charsEl=$('#chars');
+
+    let data = load();
+    let currentId = data[0]?.id || null;
+    renderList(); loadCurrent();
+
+    function load(){ try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch { return []; } }
+    function save(){ localStorage.setItem(KEY, JSON.stringify(data)); }
+
+    function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
+
+    function renderList(){
+      const q = search.value.trim().toLowerCase();
+      const items = data.filter(n=> (n.title+n.text).toLowerCase().includes(q));
+      if(items.length===0){ list.innerHTML='<li class="py-3 text-center text-slate-500">No notes</li>'; return; }
+      list.innerHTML = items.map(n=>`
+        <li class="py-2 ${n.id===currentId?'bg-slate-50':''}">
+          <button data-id="${n.id}" class="w-full text-left px-2">
+            <div class="font-medium" style="color:var(--brand-primary)">${escapeHTML(n.title||'Untitled')}</div>
+            <div class="text-xs text-slate-500 line-clamp-1">${escapeHTML(n.text||'')}</div>
+            <div class="text-[10px] text-slate-400">${new Date(n.updated).toLocaleString()}</div>
+          </button>
+        </li>`).join('');
+      list.querySelectorAll('button[data-id]').forEach(b=> b.addEventListener('click', e=>{ currentId=e.currentTarget.dataset.id; loadCurrent(); renderList(); }));
+    }
+
+    function loadCurrent(){
+      const n = data.find(x=>x.id===currentId);
+      if(!n){ titleInp.value=''; noteArea.value=''; status.textContent='Ready'; updateCounts(); return; }
+      titleInp.value = n.title||''; noteArea.value = n.text||''; status.textContent='Loaded'; updateCounts(); setTimeout(()=> status.textContent='Ready', 600);
+    }
+
+    function updateCounts(){
+      const text = noteArea.value; const words = (text.trim().match(/\S+/g)||[]).length; wordsEl.textContent=words; charsEl.textContent=text.length;
+    }
+
+    function touch(){
+      const n = data.find(x=>x.id===currentId); if(!n) return;
+      n.title = titleInp.value.trim(); n.text = noteArea.value; n.updated = Date.now();
+      save(); status.textContent='Saved ✓'; setTimeout(()=> status.textContent='Ready', 800); renderList();
+    }
+
+    newNoteBtn.addEventListener('click', ()=>{
+      const n = { id: uid(), title: 'Untitled', text: '', created: Date.now(), updated: Date.now() };
+      data.unshift(n); currentId = n.id; save(); renderList(); loadCurrent();
+    });
+
+    delBtn.addEventListener('click', ()=>{
+      if(!currentId) return; if(!confirm('Delete this note?')) return;
+      const i=data.findIndex(x=>x.id===currentId); if(i>-1){ data.splice(i,1); currentId=data[0]?.id||null; save(); renderList(); loadCurrent(); }
+    });
+
+    exportBtn.addEventListener('click', ()=>{
+      const n=data.find(x=>x.id===currentId); if(!n) return alert('No note selected');
+      const blob = new Blob([n.title+"\n\n"+n.text], {type:'text/plain'});
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=(n.title||'note')+'.txt'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+    });
+
+    importTxt.addEventListener('change', ()=>{
+      const f=importTxt.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{
+        const text=String(r.result||''); const lines=text.split(/\r?\n/); const title=lines.shift()||'Imported'; const body=lines.join('\n');
+        const n={ id: uid(), title, text: body, created: Date.now(), updated: Date.now() };
+        data.unshift(n); currentId=n.id; save(); renderList(); loadCurrent();
+      }; r.readAsText(f);
+    });
+
+    ;[titleInp, noteArea].forEach(el=> el.addEventListener('input', ()=>{ updateCounts(); touch(); }));
+    search.addEventListener('input', renderList);
+
+    // Theme toggle
+    const THEME_KEY='notebook:theme';
+    function applyTheme(){ const t=localStorage.getItem(THEME_KEY)||'light'; document.body.classList.toggle('bg-slate-900', t==='dark'); document.body.classList.toggle('text-slate-100', t==='dark'); }
+    themeBtn.addEventListener('click', ()=>{ const cur=localStorage.getItem(THEME_KEY)==='dark'?'light':'dark'; localStorage.setItem(THEME_KEY, cur); applyTheme(); });
+    applyTheme();
+
+    function escapeHTML(s){ return (s+'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m] )); }
+  </script>
+</body>
+</html>

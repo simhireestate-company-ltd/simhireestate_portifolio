@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimHireEstate — Online Whiteboard</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    *{ box-sizing: border-box; }
+    body{ margin:0; font-family:'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background:#f8fafc; color:#0f172a; }
+    header{ position:sticky; top:0; z-index:10; background:#fff; border-bottom:1px solid #e5e7eb; }
+    .wrap{ max-width: 1100px; margin:0 auto; padding:16px; }
+    .brand{ display:flex; align-items:center; gap:10px; }
+    .brand span{ color:var(--brand-primary); font-weight:600; }
+    .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; }
+    label{ font-size:.9rem; color:#334155; }
+    input, select, button{ font:inherit; }
+    .toolbar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .btn{ padding:8px 12px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; }
+    .btn-primary{ background:var(--brand-secondary); color:#fff; border-color:transparent; }
+    .btn[aria-pressed="true"]{ outline:2px solid var(--brand-secondary); }
+    .row{ display:flex; align-items:center; gap:8px; }
+    canvas{ width:100%; height:560px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; touch-action:none; }
+    .muted{ color:#64748b; font-size:.9rem; }
+    @media (max-width: 640px){ canvas{ height: 60vh; } }
+    @media print{ header, .toolbar, .muted { display:none !important; } body{ background:#fff; } .wrap{ max-width:100%; padding:0; } .card{ border:none; padding:0; } canvas{ border:none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; height:64px;">
+      <a href="../projects.html" class="brand" title="Back to Projects">
+        <img src="../assets/logo.png" alt="SimHireEstate" style="height:28px; width:auto" />
+        <span>SimHireEstate</span>
+      </a>
+      <div class="muted">Online Whiteboard</div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding-top:16px; padding-bottom:24px;">
+    <section class="card" style="margin-bottom:12px;">
+      <div class="toolbar">
+        <div class="row">
+          <label>Tool</label>
+          <button class="btn" id="toolPen" aria-pressed="true">Pen</button>
+          <button class="btn" id="toolEraser">Eraser</button>
+        </div>
+        <div class="row">
+          <label>Color</label>
+          <input type="color" id="color" value="#1a1a69" />
+        </div>
+        <div class="row">
+          <label>Size</label>
+          <input type="range" id="size" min="1" max="60" value="4" />
+          <span id="sizeVal" class="muted">4px</span>
+        </div>
+        <div class="row">
+          <label><input type="checkbox" id="gridToggle" /> Grid</label>
+        </div>
+        <div class="row">
+          <input type="file" id="imageLoader" accept="image/*" />
+        </div>
+        <div class="row" style="margin-left:auto; gap:6px;">
+          <button class="btn" id="undoBtn">Undo</button>
+          <button class="btn" id="redoBtn">Redo</button>
+          <button class="btn" id="clearBtn">Clear</button>
+          <button class="btn" id="savePNG">Save PNG</button>
+          <button class="btn" id="saveJPG">Save JPG</button>
+          <button class="btn" id="printBtn">Print</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <canvas id="board" width="1400" height="840"></canvas>
+      <div class="muted" style="margin-top:8px">Tip: Hold Shift for straight lines. Use Eraser to remove strokes. Your last drawing is kept until you refresh.</div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+
+    // Resize canvas to container width while keeping aspect and DPR
+    function resizeCanvas(){
+      const rect = canvas.getBoundingClientRect();
+      const targetW = Math.floor(rect.width * DPR);
+      const aspect = 1400/840;
+      canvas.width = targetW;
+      canvas.height = Math.round(targetW / aspect);
+      // redraw background grid and content snapshot if exists
+      const snap = undoStack.length ? undoStack[undoStack.length-1] : null;
+      ctx.setTransform(1,0,0,1,0,0); // reset any previous scaling
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      if(snap){ restoreFromDataURL(snap); } else { drawGridIfNeeded(); }
+    }
+
+    // State
+    let tool = 'pen';
+    let brushColor = document.getElementById('color').value;
+    let brushSize = parseInt(document.getElementById('size').value, 10);
+    let drawing = false; let lastX = 0, lastY = 0; let lastDown = null;
+    const undoStack = []; const redoStack = [];
+
+    // Helpers
+    function pushUndo(){ try{ undoStack.push(canvas.toDataURL()); if (undoStack.length>20) undoStack.shift(); redoStack.length=0; }catch(e){} }
+    function restoreFromDataURL(url){ const img = new Image(); img.onload = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0); drawGridIfNeeded(); }; img.src = url; }
+
+    function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.closePath(); }
+    function getPos(e){ const rect = canvas.getBoundingClientRect(); const x = (e.clientX - rect.left) * (canvas.width/rect.width); const y = (e.clientY - rect.top) * (canvas.height/rect.height); return {x, y}; }
+
+    function setToolButtons(){ document.getElementById('toolPen').setAttribute('aria-pressed', tool==='pen'); document.getElementById('toolEraser').setAttribute('aria-pressed', tool==='eraser'); }
+
+    function drawGrid(){
+      const step = 40; ctx.save();
+      ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
+      for(let x=step; x<canvas.width; x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+      for(let y=step; y<canvas.height; y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+      ctx.restore();
+    }
+    function drawGridIfNeeded(){ if (document.getElementById('gridToggle').checked) drawGrid(); }
+
+    // Init background white and responsive size
+    function initBoard(){ resizeCanvas(); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); drawGridIfNeeded(); }
+    initBoard();
+    window.addEventListener('resize', ()=>{ initBoard(); });
+
+    // Events
+    document.getElementById('toolPen').onclick = ()=>{ tool='pen'; setToolButtons(); };
+    document.getElementById('toolEraser').onclick = ()=>{ tool='eraser'; setToolButtons(); };
+    document.getElementById('color').oninput = e=> brushColor = e.target.value;
+    document.getElementById('size').oninput = e=>{ brushSize = parseInt(e.target.value,10); document.getElementById('sizeVal').textContent = brushSize+"px"; };
+    document.getElementById('gridToggle').onchange = ()=>{ const snap = canvas.toDataURL(); ctx.clearRect(0,0,canvas.width,canvas.height); const img=new Image(); img.onload=()=>{ ctx.drawImage(img,0,0); drawGridIfNeeded(); }; img.src=snap; };
+
+    function pointerDown(e){ e.preventDefault(); pushUndo(); drawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; lastDown = p; }
+    function pointerMove(e){ if (!drawing) return; const p = getPos(e); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineWidth = brushSize; if (tool==='pen'){ ctx.globalCompositeOperation='source-over'; ctx.strokeStyle = brushColor; } else { ctx.globalCompositeOperation='destination-out'; ctx.strokeStyle = 'rgba(0,0,0,1)'; }
+      if (e.shiftKey){ // straight line from lastDown
+        ctx.putImageData(ctx.getImageData(0,0,canvas.width,canvas.height),0,0); // ensure continuous draw
+        restoreFromDataURL(undoStack[undoStack.length-1]);
+        ctx.lineWidth = brushSize; ctx.beginPath(); ctx.moveTo(lastDown.x,lastDown.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+      } else {
+        line(lastX,lastY,p.x,p.y);
+        lastX = p.x; lastY = p.y;
+      }
+    }
+    function pointerUp(){ drawing = false; ctx.globalCompositeOperation='source-over'; }
+
+    canvas.addEventListener('pointerdown', pointerDown);
+    canvas.addEventListener('pointermove', pointerMove);
+    window.addEventListener('pointerup', pointerUp);
+
+    // Image loader
+    document.getElementById('imageLoader').addEventListener('change', (e)=>{
+      const file = e.target.files?.[0]; if (!file) return;
+      const url = URL.createObjectURL(file); const img = new Image(); img.onload = ()=>{ pushUndo(); ctx.drawImage(img, 0,0, canvas.width, canvas.height); drawGridIfNeeded(); URL.revokeObjectURL(url); }; img.src = url;
+    });
+
+    // Undo/Redo/Clear
+    document.getElementById('undoBtn').onclick = ()=>{ if (!undoStack.length) return; const snap = undoStack.pop(); redoStack.push(canvas.toDataURL()); restoreFromDataURL(snap); };
+    document.getElementById('redoBtn').onclick = ()=>{ if (!redoStack.length) return; const snap = redoStack.pop(); undoStack.push(canvas.toDataURL()); restoreFromDataURL(snap); };
+    document.getElementById('clearBtn').onclick = ()=>{ pushUndo(); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); drawGridIfNeeded(); };
+
+    // Save
+    function download(dataURL, name){ const a = document.createElement('a'); a.href = dataURL; a.download = name; a.click(); }
+    document.getElementById('savePNG').onclick = ()=> download(canvas.toDataURL('image/png'), 'whiteboard.png');
+    document.getElementById('saveJPG').onclick = ()=> download(canvas.toDataURL('image/jpeg', 0.92), 'whiteboard.jpg');
+    document.getElementById('printBtn').onclick = ()=> window.print();
+  </script>
+</body>
+</html>

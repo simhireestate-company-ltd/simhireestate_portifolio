@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invitation & Poster Builder — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:{primary:'#063F5E',secondary:'#1a1a69'}}}}}</script>
+  <style>
+    :root{--brand-primary:#063F5E;--brand-secondary:#1a1a69}
+    canvas{ background:#fff }
+    .tool-btn[aria-pressed="true"]{ outline:2px solid var(--brand-secondary) }
+  </style>
+</head>
+<body class="min-h-screen bg-white text-slate-800">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl font-bold" style="color:var(--brand-primary)">Invitation & Poster Builder</h1>
+      <a href="../projects.html" class="text-sm text-white px-3 py-2 rounded" style="background:var(--brand-secondary)">Back</a>
+    </header>
+
+    <section class="grid lg:grid-cols-3 gap-6">
+      <aside class="p-4 border rounded-lg bg-white space-y-4">
+        <div>
+          <h2 class="font-semibold" style="color:var(--brand-primary)">Canvas</h2>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <label class="text-sm">Preset
+              <select id="sizePreset" class="mt-1 w-full border rounded px-2 py-1 text-sm">
+                <option value="1080x1350">Poster 1080×1350</option>
+                <option value="1920x1080">Landscape 1920×1080</option>
+                <option value="1350x1080">Portrait 1350×1080</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label class="text-sm">BG
+              <input id="bgColor" type="color" class="mt-1 w-full border rounded px-1 py-1" value="#ffffff" />
+            </label>
+            <input id="cw" placeholder="W" class="border rounded px-2 py-1 text-sm" />
+            <input id="ch" placeholder="H" class="border rounded px-2 py-1 text-sm" />
+          </div>
+          <button id="applySize" class="mt-2 w-full px-3 py-2 text-white rounded" style="background:var(--brand-secondary)">Apply</button>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <label class="flex items-center gap-2"><input id="gridToggle" type="checkbox" /> Grid</label>
+            <label class="flex items-center gap-2"><input id="snapToggle" type="checkbox" checked /> Snap to grid</label>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="font-semibold" style="color:var(--brand-primary)">Templates</h2>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <button class="tpl px-2 py-1.5 border rounded" data-k="birthday" style="border-color:#E5E7EB">Birthday</button>
+            <button class="tpl px-2 py-1.5 border rounded" data-k="wedding" style="border-color:#E5E7EB">Wedding</button>
+            <button class="tpl px-2 py-1.5 border rounded" data-k="party" style="border-color:#E5E7EB">Party</button>
+            <button class="tpl px-2 py-1.5 border rounded" data-k="blank" style="border-color:#E5E7EB">Blank</button>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="font-semibold" style="color:var(--brand-primary)">Add</h2>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <button id="addText" class="tool-btn px-2 py-1.5 border rounded" style="border-color:#E5E7EB">Text</button>
+            <button id="addRect" class="tool-btn px-2 py-1.5 border rounded" style="border-color:#E5E7EB">Rectangle</button>
+            <button id="addCircle" class="tool-btn px-2 py-1.5 border rounded" style="border-color:#E5E7EB">Circle</button>
+            <label class="px-2 py-1.5 border rounded cursor-pointer text-center" style="border-color:#E5E7EB">Image
+              <input id="imgUpload" type="file" accept="image/*" class="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="font-semibold" style="color:var(--brand-primary)">Selected</h2>
+          <div class="mt-2 space-y-2 text-sm" id="inspector">
+            <div class="text-slate-500">Select an object on canvas</div>
+          </div>
+          <div class="mt-2 flex gap-2">
+            <button id="bringFront" class="px-2 py-1.5 border rounded text-xs" style="border-color:#E5E7EB">Bring Front</button>
+            <button id="sendBack" class="px-2 py-1.5 border rounded text-xs" style="border-color:#E5E7EB">Send Back</button>
+            <button id="deleteObj" class="px-2 py-1.5 border rounded text-xs text-red-600 border-red-200">Delete</button>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="font-semibold" style="color:var(--brand-primary)">Export</h2>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <select id="exportFmt" class="border rounded px-2 py-1">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPEG</option>
+            </select>
+            <button id="exportBtn" class="px-2 py-1.5 text-white rounded" style="background:var(--brand-secondary)">Download</button>
+            <button id="exportTransparent" class="px-2 py-1.5 border rounded" style="border-color:#E5E7EB">Transparent PNG</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="lg:col-span-2 p-4 border rounded-lg bg-white">
+        <div class="overflow-auto border rounded">
+          <canvas id="cv" width="1080" height="1350" class="block max-w-full"></canvas>
+        </div>
+        <div class="mt-2 text-xs text-slate-500">Tip: Click an item to select, then drag to move. Use inspector to edit text, font, colors, and sizes.</div>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const $=s=>document.querySelector(s);
+    const cv=$('#cv'), ctx=cv.getContext('2d');
+    const sizePreset=$('#sizePreset'), cwInp=$('#cw'), chInp=$('#ch');
+    const bgColor=$('#bgColor');
+    const inspector=$('#inspector');
+
+    const state = { bg:'#ffffff', objects:[], sel:null };
+    const undoStack=[]; const redoStack=[]; const GRID=40;
+
+    const fonts=['Inter','Georgia','Times New Roman','Courier New','Arial','Tahoma'];
+
+    const templates = {
+      blank: ()=>({ bg:'#ffffff', objects:[] }),
+      birthday: ()=>({ bg:'#fff8e7', objects:[
+        {type:'text', x:100,y:180, text:'Birthday Party', color:'#1a1a69', font:'Georgia', size:72, align:'left'},
+        {type:'text', x:100,y:260, text:'Join us to celebrate', color:'#063F5E', font:'Inter', size:28, align:'left'},
+        {type:'text', x:100,y:320, text:'Name: ________', color:'#0f172a', font:'Inter', size:24, align:'left'},
+        {type:'text', x:100,y:360, text:'Date: __ / __ / ____', color:'#0f172a', font:'Inter', size:24, align:'left'},
+        {type:'rect', x:80,y:120,w:920,h:460, fill:'rgba(26,26,105,0.06)', radius:16 }
+      ]}),
+      wedding: ()=>({ bg:'#fff', objects:[
+        {type:'rect', x:0,y:0,w:1080,h:1350, fill:'#f7fafc' },
+        {type:'text', x:540,y:220, text:'Wedding Invitation', color:'#1a1a69', font:'Times New Roman', size:60, align:'center'},
+        {type:'text', x:540,y:300, text:'Bride & Groom', color:'#063F5E', font:'Georgia', size:44, align:'center'},
+        {type:'text', x:540,y:370, text:'Venue: __________', color:'#0f172a', font:'Inter', size:24, align:'center'}
+      ]}),
+      party: ()=>({ bg:'#101827', objects:[
+        {type:'text', x:540,y:200, text:'Party Night', color:'#ffffff', font:'Arial', size:72, align:'center'},
+        {type:'text', x:540,y:280, text:'At SimHireEstate', color:'#22d3ee', font:'Arial', size:32, align:'center'},
+        {type:'rect', x:140,y:340,w:800,h:400, fill:'rgba(255,255,255,0.08)', radius:12 }
+      ]}),
+    };
+
+    function setCanvasSize(w,h){ cv.width=w; cv.height=h; draw(); }
+
+    function applyTemplate(key){ const t=templates[key](); state.bg=t.bg; state.objects=t.objects; state.sel=null; bgColor.value = toHex(state.bg) || '#ffffff'; draw(); }
+
+    function toHex(c){ // handle rgba or hex
+      if(!c) return '#ffffff';
+      if(c.startsWith('#')) return c; return '#ffffff';
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      // background layer
+      ctx.fillStyle = state.bg; ctx.fillRect(0,0,cv.width,cv.height);
+      // optional grid
+      if($('#gridToggle').checked){
+        ctx.save(); ctx.strokeStyle='#e5e7eb'; ctx.lineWidth=1; for(let x=0;x<cv.width;x+=GRID){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+        for(let y=0;y<cv.height;y+=GRID){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); } ctx.restore();
+      }
+      // objects
+      state.objects.forEach((o)=> drawObj(o));
+      // selection overlay
+      if(state.sel){ drawSelection(state.sel); }
+    }
+
+    function drawObj(o){
+      if(o.type==='rect'){
+        const r=o.radius||0; ctx.save();
+        if(r){ roundedRect(ctx, o.x,o.y,o.w,o.h,r); ctx.clip(); }
+        ctx.fillStyle=o.fill||'#e5e7eb';
+        if(r){ roundedRect(ctx, o.x,o.y,o.w,o.h,r); ctx.fill(); }
+        else { ctx.fillRect(o.x,o.y,o.w,o.h); }
+        ctx.restore();
+      }
+      if(o.type==='circle'){
+        ctx.fillStyle=o.fill||'#e5e7eb'; ctx.beginPath(); ctx.arc(o.x,o.y,o.r||40,0,Math.PI*2); ctx.fill();
+      }
+      if(o.type==='text'){
+        ctx.fillStyle=o.color||'#0f172a';
+        ctx.font = `${o.size||28}px ${o.font||'Inter'}`;
+        ctx.textAlign = (o.align||'left'); ctx.textBaseline='top';
+        const x = o.align==='center' ? o.x : (o.align==='right' ? o.x : o.x);
+        ctx.fillText(o.text||'', x, o.y);
+      }
+      if(o.type==='image' && o.img){ ctx.drawImage(o.img, o.x, o.y, o.w, o.h); }
+    }
+
+    function roundedRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+    function drawSelection(o){
+      const pad=6; ctx.save(); ctx.setLineDash([6,4]); ctx.strokeStyle='#1a1a69'; ctx.lineWidth=1.2;
+      if(o.type==='circle'){ ctx.beginPath(); ctx.arc(o.x, o.y, o.r||40+pad, 0, Math.PI*2); ctx.stroke(); }
+      else if(o.type==='text'){ const w=ctx.measureText(o.text||' ').width; const h=(o.size||28)+6; const x=o.x-(o.align==='center'?w/2:o.align==='right'?w:0); ctx.strokeRect(x-pad, o.y-pad, w+pad*2, h+pad*2); }
+      else { ctx.strokeRect(o.x-pad, o.y-pad, (o.w||0)+pad*2, (o.h||0)+pad*2); }
+      ctx.restore();
+    }
+
+    function hit(x,y){ for(let i=state.objects.length-1;i>=0;i--){ const o=state.objects[i]; if(o.type==='circle'){ const dx=x-o.x, dy=y-o.y; const rr=o.r||40; if(dx*dx+dy*dy<=rr*rr) return o; } else if(o.type==='text'){ ctx.font=`${o.size||28}px ${o.font||'Inter'}`; const w=ctx.measureText(o.text||' ').width; const h=(o.size||28)+6; const left = o.align==='center'? o.x-w/2 : (o.align==='right'? o.x-w : o.x); if(x>=left && x<=left+w && y>=o.y && y<=o.y+h) return o; } else { if(x>=o.x && x<=o.x+(o.w||0) && y>=o.y && y<=o.y+(o.h||0)) return o; } } return null; }
+
+    let dragging=false, dx=0, dy=0;
+    function snap(v){ return $('#snapToggle').checked ? Math.round(v/GRID)*GRID : v; }
+    function pushUndo(){ try{ undoStack.push(JSON.stringify(state)); if(undoStack.length>40) undoStack.shift(); redoStack.length=0; }catch(e){} }
+
+    cv.addEventListener('mousedown', e=>{ const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)*(cv.width/r.width); const y=(e.clientY-r.top)*(cv.height/r.height); const o=hit(x,y); state.sel=o; if(o){ if(o.type==='circle'){ dx=x-o.x; dy=y-o.y; } else if(o.type==='text'){ dx=x-(o.align==='center'?o.x:o.x); dy=y-o.y; } else { dx=x-o.x; dy=y-o.y; } dragging=true; pushUndo(); } draw(); renderInspector(); });
+    cv.addEventListener('mousemove', e=>{ if(!dragging||!state.sel) return; const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)*(cv.width/r.width); const y=(e.clientY-r.top)*(cv.height/r.height); const o=state.sel; if(o.type==='circle'){ o.x=snap(x-dx); o.y=snap(y-dy); } else if(o.type==='text'){ o.x=snap(o.align==='center'? x-dx : x-dx); o.y=snap(y-dy); } else { o.x=snap(x-dx); o.y=snap(y-dy); } draw(); });
+    window.addEventListener('mouseup', ()=> dragging=false);
+
+    function renderInspector(){
+      const o=state.sel; if(!o){ inspector.innerHTML='<div class="text-slate-500 text-sm">Select an object on canvas</div>'; return; }
+      let html='';
+      if(o.type==='text'){
+        html += `<label class='text-sm block'>Text<input id='i_text' class='mt-1 w-full border rounded px-2 py-1' value='${escapeHTML(o.text||'')}' /></label>`;
+        html += `<div class='grid grid-cols-2 gap-2 mt-2'>
+          <label class='text-sm'>Font<select id='i_font' class='mt-1 w-full border rounded px-2 py-1'>${fonts.map(f=>`<option ${o.font===f?'selected':''}>${f}</option>`)}</select></label>
+          <label class='text-sm'>Size<input id='i_size' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.size||28}' /></label>
+        </div>`;
+        html += `<div class='grid grid-cols-2 gap-2 mt-2'>
+          <label class='text-sm'>Color<input id='i_color' type='color' class='mt-1 w-full border rounded px-1 py-1' value='${o.color||'#0f172a'}' /></label>
+          <label class='text-sm'>Align<select id='i_align' class='mt-1 w-full border rounded px-2 py-1'>${['left','center','right'].map(a=>`<option ${o.align===a?'selected':''}>${a}</option>`)}</select></label>
+        </div>`;
+      } else if(o.type==='rect'){
+        html += `<div class='grid grid-cols-2 gap-2'>
+          <label class='text-sm'>X<input id='i_x' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.x}' /></label>
+          <label class='text-sm'>Y<input id='i_y' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.y}' /></label>
+          <label class='text-sm'>W<input id='i_w' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.w||200}' /></label>
+          <label class='text-sm'>H<input id='i_h' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.h||120}' /></label>
+          <label class='text-sm'>Radius<input id='i_r' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.radius||0}' /></label>
+          <label class='text-sm'>Fill<input id='i_fill' type='color' class='mt-1 w-full border rounded px-1 py-1' value='${o.fill||'#e5e7eb'}' /></label>
+        </div>`;
+      } else if(o.type==='circle'){
+        html += `<div class='grid grid-cols-2 gap-2'>
+          <label class='text-sm'>X<input id='i_cx' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.x}' /></label>
+          <label class='text-sm'>Y<input id='i_cy' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.y}' /></label>
+          <label class='text-sm'>Radius<input id='i_cr' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.r||40}' /></label>
+          <label class='text-sm'>Fill<input id='i_cfill' type='color' class='mt-1 w-full border rounded px-1 py-1' value='${o.fill||'#e5e7eb'}' /></label>
+        </div>`;
+      } else if(o.type==='image'){
+        html += `<div class='grid grid-cols-2 gap-2'>
+          <label class='text-sm'>X<input id='i_ix' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.x}' /></label>
+          <label class='text-sm'>Y<input id='i_iy' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.y}' /></label>
+          <label class='text-sm'>W<input id='i_iw' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.w||200}' /></label>
+          <label class='text-sm'>H<input id='i_ih' type='number' class='mt-1 w-full border rounded px-2 py-1' value='${o.h||200}' /></label>
+        </div>`;
+      }
+      inspector.innerHTML = html;
+      bindInspector(o);
+    }
+
+    function bindInspector(o){
+      const g=id=>inspector.querySelector('#'+id);
+      if(o.type==='text'){
+        g('i_text')?.addEventListener('input', e=>{ o.text=e.target.value; draw(); });
+        g('i_font')?.addEventListener('change', e=>{ o.font=e.target.value; draw(); });
+        g('i_size')?.addEventListener('input', e=>{ o.size=+e.target.value||28; draw(); });
+        g('i_color')?.addEventListener('input', e=>{ o.color=e.target.value; draw(); });
+        g('i_align')?.addEventListener('change', e=>{ o.align=e.target.value; draw(); });
+      }
+      if(o.type==='rect'){
+        g('i_x')?.addEventListener('input', e=>{ o.x=+e.target.value||0; draw(); });
+        g('i_y')?.addEventListener('input', e=>{ o.y=+e.target.value||0; draw(); });
+        g('i_w')?.addEventListener('input', e=>{ o.w=+e.target.value||100; draw(); });
+        g('i_h')?.addEventListener('input', e=>{ o.h=+e.target.value||100; draw(); });
+        g('i_r')?.addEventListener('input', e=>{ o.radius=+e.target.value||0; draw(); });
+        g('i_fill')?.addEventListener('input', e=>{ o.fill=e.target.value; draw(); });
+      }
+      if(o.type==='circle'){
+        g('i_cx')?.addEventListener('input', e=>{ o.x=+e.target.value||0; draw(); });
+        g('i_cy')?.addEventListener('input', e=>{ o.y=+e.target.value||0; draw(); });
+        g('i_cr')?.addEventListener('input', e=>{ o.r=+e.target.value||40; draw(); });
+        g('i_cfill')?.addEventListener('input', e=>{ o.fill=e.target.value; draw(); });
+      }
+      if(o.type==='image'){
+        g('i_ix')?.addEventListener('input', e=>{ o.x=+e.target.value||0; draw(); });
+        g('i_iy')?.addEventListener('input', e=>{ o.y=+e.target.value||0; draw(); });
+        g('i_iw')?.addEventListener('input', e=>{ o.w=+e.target.value||100; draw(); });
+        g('i_ih')?.addEventListener('input', e=>{ o.h=+e.target.value||100; draw(); });
+      }
+    }
+
+    // Controls
+    $('#applySize').addEventListener('click', ()=>{
+      const v=sizePreset.value; let w,h; if(v==='custom'){ w=+cwInp.value||1080; h=+chInp.value||1350; } else { const [W,H]=v.split('x').map(Number); w=W; h=H; }
+      setCanvasSize(w,h);
+    });
+    sizePreset.addEventListener('change', ()=>{ const c=sizePreset.value==='custom'; cwInp.disabled=!c; chInp.disabled=!c; });
+    bgColor.addEventListener('input', ()=>{ state.bg=bgColor.value; draw(); });
+
+    $('#addText').addEventListener('click', ()=>{ pushUndo(); const o={type:'text', x:100, y:100, text:'Edit me', color:'#0f172a', font:'Inter', size:32, align:'left'}; state.objects.push(o); state.sel=o; draw(); renderInspector(); });
+    $('#addRect').addEventListener('click', ()=>{ pushUndo(); const o={type:'rect', x:80, y:80, w:200, h:120, fill:'#e5e7eb', radius:8}; state.objects.push(o); state.sel=o; draw(); renderInspector(); });
+    $('#addCircle').addEventListener('click', ()=>{ pushUndo(); const o={type:'circle', x:200, y:200, r:60, fill:'#e5e7eb'}; state.objects.push(o); state.sel=o; draw(); renderInspector(); });
+    $('#imgUpload').addEventListener('change', ()=>{
+      const f=$('#imgUpload').files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ const img=new Image(); img.onload=()=>{ pushUndo(); const o={type:'image', x:120, y:120, w:Math.min(img.width,400), h:Math.min(img.height,300), img}; state.objects.push(o); state.sel=o; draw(); renderInspector(); }; img.src=r.result; }; r.readAsDataURL(f);
+    });
+
+    // Layer controls
+    $('#bringFront').addEventListener('click', ()=>{ const i=state.objects.indexOf(state.sel); if(i>-1){ pushUndo(); state.objects.splice(i,1); state.objects.push(state.sel); draw(); }});
+    $('#sendBack').addEventListener('click', ()=>{ const i=state.objects.indexOf(state.sel); if(i>-1){ pushUndo(); state.objects.splice(i,1); state.objects.unshift(state.sel); draw(); }});
+    $('#deleteObj').addEventListener('click', ()=>{ const i=state.objects.indexOf(state.sel); if(i>-1){ pushUndo(); state.objects.splice(i,1); state.sel=null; draw(); renderInspector(); }});
+
+    // Undo/Redo
+    window.addEventListener('keydown', (e)=>{
+      const mod=e.ctrlKey||e.metaKey; if(mod && e.key.toLowerCase()==='z'){ e.preventDefault(); if(undoStack.length){ const snap=undoStack.pop(); redoStack.push(JSON.stringify(state)); Object.assign(state, JSON.parse(snap)); draw(); renderInspector(); } }
+      if((mod && e.key.toLowerCase()==='y') || (mod && e.shiftKey && e.key.toLowerCase()==='z')){ e.preventDefault(); if(redoStack.length){ const snap=redoStack.pop(); undoStack.push(JSON.stringify(state)); Object.assign(state, JSON.parse(snap)); draw(); renderInspector(); } }
+    });
+
+    // Export
+    $('#exportBtn').addEventListener('click', ()=>{ const type=$('#exportFmt').value; const url=cv.toDataURL(type, type==='image/png'?1:0.92); const a=document.createElement('a'); a.href=url; a.download=`poster.${type==='image/png'?'png':'jpg'}`; a.click(); });
+    $('#exportTransparent').addEventListener('click', ()=>{
+      // render without background for transparent PNG
+      const backup=state.bg; state.bg='rgba(0,0,0,0)'; draw(); const url=cv.toDataURL('image/png'); state.bg=backup; draw();
+      const a=document.createElement('a'); a.href=url; a.download='poster.png'; a.click();
+    });
+
+    // Template buttons
+    document.querySelectorAll('.tpl').forEach(b=> b.addEventListener('click', ()=>{ pushUndo(); applyTemplate(b.dataset.k); }));
+
+    function escapeHTML(s){ return (s+'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[m] )); }
+
+    // Init
+    applyTemplate('birthday');
+  </script>
+</body>
+</html>

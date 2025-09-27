@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Physics Master — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#063F5E',
+              secondary: '#1a1a69'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --brand-primary: #063F5E;
+      --brand-secondary: #1a1a69;
+    }
+    body {
+      background: radial-gradient(circle at top, rgba(6, 63, 94, 0.1), transparent 70%), #f8fafc;
+    }
+    .card-glass {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+    }
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      color: rgb(100 116 139);
+    }
+    .unit-list span {
+      border-radius: 9999px;
+      background: rgba(6, 63, 94, 0.08);
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      color: var(--brand-primary);
+    }
+    @media (max-width: 1024px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800">
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <header class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h1 class="text-3xl font-bold" style="color: var(--brand-primary)">Physics Master</h1>
+        <p class="text-slate-600 mt-1">Calculate kinematics, energy, electricity, waves, and modern physics with guided explanations and formula references.</p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-sm">
+        <button id="printGuide" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Print reference</button>
+        <a href="../projects.html" class="px-3 py-2 text-white rounded" style="background: var(--brand-secondary)">Back</a>
+      </div>
+    </header>
+
+    <section class="grid layout gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <aside class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg space-y-6">
+        <div>
+          <div class="section-title">Topics</div>
+          <div class="mt-3 grid grid-cols-2 gap-2 text-sm" id="topicList"></div>
+        </div>
+        <div>
+          <div class="section-title">Bookmarked formulas</div>
+          <div id="bookmarks" class="mt-3 space-y-2 text-sm text-slate-600"></div>
+        </div>
+        <div>
+          <div class="section-title">Units helper</div>
+          <div class="unit-list mt-3 flex flex-wrap gap-2 text-xs">
+            <span>m (meter)</span>
+            <span>s (second)</span>
+            <span>kg (kilogram)</span>
+            <span>N (newton)</span>
+            <span>J (joule)</span>
+            <span>C (coulomb)</span>
+            <span>V (volt)</span>
+            <span>Ω (ohm)</span>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500">Tip: Every calculator includes explainer text. Hover the “?” icon to see formula derivations and assumptions.</div>
+      </aside>
+
+      <div class="space-y-6">
+        <section id="calculators" class="grid gap-6 lg:grid-cols-2"></section>
+        <section class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg" id="formulaLibrary">
+          <div class="flex flex-wrap items-center justify-between">
+            <h2 class="text-xl font-semibold" style="color: var(--brand-primary)">Formula Library & Explanations</h2>
+            <button id="toggleAll" class="px-3 py-1.5 border rounded text-xs" style="border-color:#E5E7EB">Expand all</button>
+          </div>
+          <div class="mt-4 space-y-3" id="formulaList"></div>
+        </section>
+        <section class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg">
+          <h2 class="text-xl font-semibold" style="color: var(--brand-primary)">Study Notes</h2>
+          <textarea id="notes" class="mt-3 w-full border rounded-2xl px-3 py-3 h-40" placeholder="Write your physics study notes or summaries here..."></textarea>
+          <div class="mt-3 flex flex-wrap gap-2 text-sm">
+            <button id="saveNotes" class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Save notes</button>
+            <button id="clearNotes" class="px-3 py-2 border rounded text-red-500" style="border-color:#FECACA">Clear</button>
+          </div>
+          <div class="mt-3 text-xs text-slate-500">Notes save locally on this device. Use them to capture tricky steps or teacher tips.</div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <template id="calculatorTemplate">
+    <article class="card-glass p-4 border border-slate-200 rounded-2xl shadow-lg flex flex-col gap-3">
+      <header class="flex items-start justify-between gap-2">
+        <div>
+          <h3 class="font-semibold text-lg text-slate-800" data-title></h3>
+          <p class="text-sm text-slate-500" data-description></p>
+        </div>
+        <button data-bookmark class="text-xs px-2 py-1 rounded border" style="border-color:#E5E7EB">☆ Save</button>
+      </header>
+      <div class="grid gap-2 text-sm" data-inputs></div>
+      <div class="flex flex-wrap items-center gap-3">
+        <button data-calc class="px-3 py-2 text-white rounded" style="background: var(--brand-secondary)">Calculate</button>
+        <button data-clear class="px-3 py-2 border rounded" style="border-color:#E5E7EB">Reset</button>
+        <div class="text-sm text-slate-600" data-result>Result: —</div>
+      </div>
+      <details class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-600" data-explain>
+        <summary class="cursor-pointer text-slate-700 font-medium">How it works</summary>
+        <div class="mt-2 space-y-2" data-steps></div>
+        <div class="mt-2 text-xs text-slate-500" data-units></div>
+      </details>
+    </article>
+  </template>
+
+  <template id="formulaTemplate">
+    <details class="border border-slate-200 rounded-xl bg-white/80 p-3">
+      <summary class="cursor-pointer font-semibold text-slate-700 flex items-center justify-between">
+        <span data-name></span>
+        <span class="text-xs text-slate-400" data-topic></span>
+      </summary>
+      <div class="mt-2 text-sm text-slate-600" data-body></div>
+    </details>
+  </template>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+    const calculators = [
+      {
+        id: 'kinematics',
+        topic: 'Motion',
+        title: 'Kinematics Solver',
+        description: 'Compute displacement, final velocity, or time for constant acceleration scenarios.',
+        inputs: [
+          { label: 'Initial velocity (u) [m/s]', key: 'u', type: 'number', placeholder: 'e.g., 5' },
+          { label: 'Acceleration (a) [m/s²]', key: 'a', type: 'number', placeholder: 'e.g., 2.5' },
+          { label: 'Time (t) [s]', key: 't', type: 'number', placeholder: 'e.g., 4' }
+        ],
+        compute(values) {
+          const u = Number(values.u);
+          const a = Number(values.a);
+          const t = Number(values.t);
+          if ([u, a, t].some((v) => isNaN(v))) return { error: 'Enter all values to compute.' };
+          const v = u + a * t;
+          const s = u * t + 0.5 * a * t * t;
+          return {
+            text: `Final velocity v = ${v.toFixed(2)} m/s, displacement s = ${s.toFixed(2)} m`,
+            units: 'Using v = u + at and s = ut + ½at²',
+            steps: [
+              `v = u + at = ${u} + ${a}×${t} = ${v.toFixed(2)} m/s`,
+              `s = ut + ½at² = ${u}×${t} + 0.5×${a}×${t}² = ${s.toFixed(2)} m`
+            ]
+          };
+        },
+        explanation: [
+          'Assumes constant acceleration and straight-line motion.',
+          'Derives from integrating acceleration to get velocity and displacement.',
+          'If you know three of u, v, a, t, s you can solve for the others using SUVAT equations.'
+        ]
+      },
+      {
+        id: 'energy',
+        topic: 'Energy',
+        title: 'Mechanical Energy Analyzer',
+        description: 'Calculate kinetic and potential energy for moving objects at height.',
+        inputs: [
+          { label: 'Mass (m) [kg]', key: 'm', type: 'number', placeholder: 'e.g., 3.5' },
+          { label: 'Speed (v) [m/s]', key: 'v', type: 'number', placeholder: 'e.g., 12' },
+          { label: 'Height (h) [m]', key: 'h', type: 'number', placeholder: 'e.g., 8' },
+          { label: 'Gravity (g) [m/s²]', key: 'g', type: 'number', placeholder: '9.81', value: 9.81 }
+        ],
+        compute(values) {
+          const m = Number(values.m);
+          const v = Number(values.v);
+          const h = Number(values.h);
+          const g = Number(values.g);
+          if ([m, v, h, g].some((v) => isNaN(v))) return { error: 'Enter all values to compute.' };
+          const ke = 0.5 * m * v * v;
+          const pe = m * g * h;
+          const total = ke + pe;
+          return {
+            text: `Kinetic = ${ke.toFixed(2)} J, Potential = ${pe.toFixed(2)} J, Total = ${total.toFixed(2)} J`,
+            units: 'KE = ½mv², PE = mgh',
+            steps: [
+              `KE = ½ × ${m} × ${v}² = ${ke.toFixed(2)} J`,
+              `PE = ${m} × ${g} × ${h} = ${pe.toFixed(2)} J`,
+              `Total energy = KE + PE = ${total.toFixed(2)} J`
+            ]
+          };
+        },
+        explanation: [
+          'Energy is scalar, so kinetic and potential add directly.',
+          'Potential energy depends on height relative to reference level.',
+          'In isolated systems, mechanical energy remains constant (ignoring losses).'...
+```}

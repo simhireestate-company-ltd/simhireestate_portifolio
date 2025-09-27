@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recipe Finder — SimHireEstate</title>
+  <link rel="icon" href="../assets/logo.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { primary: '#063F5E', secondary: '#1a1a69', gray: '#6B7280' } } } } };
+  </script>
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    html{scroll-behavior:smooth}
+    mark { background: #FEF3C7; padding: 0 2px; border-radius: 2px; }
+  </style>
+</head>
+<body class="min-h-screen bg-white text-slate-800">
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <a href="../projects.html" class="text-sm text-brand-secondary hover:underline">← Back to Projects</a>
+      <div class="flex items-center gap-2">
+        <img src="../assets/logo.png" alt="SimHireEstate" class="h-8 w-auto" />
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-2xl font-bold" style="color: var(--brand-primary)">Recipe Finder</h1>
+    <p class="text-slate-600 mt-1">Search tasty meals from a local dataset. Filter by name or ingredients.</p>
+
+    <!-- Search Bar -->
+    <div class="mt-6 grid sm:grid-cols-[1fr_auto_auto] gap-3">
+      <input id="q" type="text" placeholder="Search by name or ingredient (e.g., rice, chicken, tomato)" class="w-full border border-slate-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-secondary" />
+      <button id="btnSearch" class="px-4 py-2 rounded-md text-white" style="background: var(--brand-secondary)">Search</button>
+      <button id="btnClear" class="px-4 py-2 rounded-md border border-slate-200">Clear</button>
+    </div>
+
+    <!-- Quick Topics -->
+    <div class="mt-4 text-sm text-slate-600">
+      Try: 
+      <button class="topic px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">rice</button>
+      <button class="topic px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">vegetarian</button>
+      <button class="topic px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">chicken</button>
+      <button class="topic px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">banana</button>
+      <button class="topic px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">beans</button>
+    </div>
+
+    <!-- Results Info -->
+    <div id="info" class="mt-3 text-sm text-slate-500"></div>
+
+    <!-- Results -->
+    <div id="results" class="mt-6 grid md:grid-cols-2 gap-4"></div>
+  </main>
+
+  <footer class="border-t border-slate-100 mt-10">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-slate-600 flex items-center justify-between">
+      <span>© <span id="year"></span> SimHireEstate</span>
+      <a href="../contact.html" class="hover:text-brand-secondary">Contact</a>
+    </div>
+  </footer>
+
+  <script>
+    const el = id => document.getElementById(id);
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    let RECIPES = [];
+    let loadedFrom = 'json';
+
+    async function loadRecipes(){
+      try{
+        const res = await fetch('./recipes.json');
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        RECIPES = await res.json();
+        loadedFrom = 'json';
+        el('info').textContent = `Loaded ${RECIPES.length} recipes.`;
+      }catch(err){
+        console.warn('recipes.json not available, using fallback', err);
+        loadedFrom = 'fallback';
+        RECIPES = [
+          {id:1,title:'Vegetable Pilau Rice',category:'Vegetarian',tags:['rice','spiced'],ingredients:['rice','onion','garlic','carrot','peas','oil','salt','spices'],instructions:['Rinse rice until water runs clear.','Sauté onion and garlic in oil.','Add spices and vegetables; cook 2 minutes.','Add rice + water (1:2).','Simmer covered until fluffy.']},
+          {id:2,title:'Grilled Chicken Brochettes',category:'Meat',tags:['chicken','skewers'],ingredients:['chicken','onion','bell pepper','garlic','oil','salt','pepper'],instructions:['Marinate chicken in oil, garlic, salt, pepper 30 mins.','Skewer with onions and peppers.','Grill until cooked through, turning occasionally.']},
+          {id:3,title:'Rice and Beans',category:'Everyday',tags:['beans','rice'],ingredients:['rice','beans','onion','tomato','oil','salt'],instructions:['Cook beans until tender.','Sauté onion and tomato in oil.','Add cooked beans, season, simmer.','Serve with steamed rice.']},
+          {id:4,title:'Isombe with Peanut Sauce',category:'Traditional',tags:['cassava leaves'],ingredients:['cassava leaves','peanut butter','onion','garlic','palm oil','salt'],instructions:['Boil cassava leaves until soft.','Blend peanuts with water to make sauce.','Cook onion and garlic in oil, add leaves and peanut sauce.','Simmer and season.']},
+          {id:5,title:'Banana Pancakes',category:'Breakfast',tags:['banana','sweet'],ingredients:['banana','egg','flour','milk','baking powder','sugar','salt','oil'],instructions:['Mash bananas.','Whisk in egg, milk, dry ingredients.','Cook small ladles on oiled pan until golden each side.']},
+          {id:6,title:'Tomato Omelette',category:'Breakfast',tags:['eggs'],ingredients:['eggs','tomato','onion','salt','pepper','oil'],instructions:['Beat eggs with salt and pepper.','Sauté tomato and onion.','Pour eggs, cook until set.']},
+          {id:7,title:'Chapati Wraps',category:'Snack',tags:['flatbread'],ingredients:['flour','water','salt','oil'],instructions:['Knead flour, water, salt, oil to soft dough.','Rest 20 minutes.','Roll thin and cook on hot pan with a little oil.']},
+          {id:8,title:'Tilapia with Lemon',category:'Seafood',tags:['fish'],ingredients:['tilapia','lemon','garlic','salt','pepper','oil'],instructions:['Season fish with garlic, salt, pepper, lemon.','Pan-fry until flaky.']},
+          {id:9,title:'Vegetable Stir-Fry',category:'Vegetarian',tags:['quick'],ingredients:['cabbage','carrot','pepper','soy sauce','oil','garlic'],instructions:['Stir-fry garlic in oil.','Add sliced veggies, cook crisp-tender.','Season with soy sauce.']},
+          {id:10,title:'Peanut Banana Smoothie',category:'Drink',tags:['banana'],ingredients:['banana','peanut butter','milk','honey','ice'],instructions:['Blend all until smooth.']},
+          {id:11,title:'Pilau with Beef',category:'Meat',tags:['rice','beef'],ingredients:['beef','rice','onion','pilau masala','garlic','oil','salt'],instructions:['Brown beef.','Add onion, garlic, masala.','Add rice and water; simmer until cooked.']},
+          {id:12,title:'Avocado Salad',category:'Fresh',tags:['salad'],ingredients:['avocado','tomato','onion','lemon','salt','pepper'],instructions:['Dice ingredients.','Toss with lemon, salt, pepper.']}
+        ];
+        el('info').textContent = `Loaded ${RECIPES.length} recipes (fallback).`;
+      }
+    }
+
+    function highlight(text, query){
+      if(!query) return text;
+      const esc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return text.replace(new RegExp(esc,'ig'), m=>`<mark>${m}</mark>`);
+    }
+
+    function render(list, query){
+      const c = document.getElementById('results');
+      c.innerHTML = '';
+      if(list.length === 0){
+        c.innerHTML = '<div class="text-sm text-slate-500">No recipes found. Try a different keyword.</div>';
+        return;
+      }
+      list.forEach(r => {
+        const card = document.createElement('article');
+        card.className = 'p-4 border border-slate-200 rounded-lg bg-white';
+        const title = `<h3 class="font-semibold text-lg" style="color: var(--brand-primary)">${highlight(r.title, query)}</h3>`;
+        const meta = `<div class="mt-1 text-xs text-slate-500">${r.category || ''} ${r.tags && r.tags.length? '• '+r.tags.join(', '): ''}</div>`;
+        const ing = (r.ingredients||[]).map(i=>`<li>${highlight(i, query)}</li>`).join('');
+        const steps = (r.instructions||[]).map((s,i)=>`<li><span class="text-slate-400">${i+1}.</span> ${s}</li>`).join('');
+        card.innerHTML = `${title}${meta}
+          <div class="mt-3 grid sm:grid-cols-2 gap-3">
+            <div>
+              <div class="text-sm font-medium">Ingredients</div>
+              <ul class="mt-1 list-disc list-inside text-sm text-slate-700">${ing}</ul>
+            </div>
+            <div>
+              <div class="text-sm font-medium">Instructions</div>
+              <ol class="mt-1 space-y-1 text-sm text-slate-700">${steps}</ol>
+            </div>
+          </div>`;
+        c.appendChild(card);
+      });
+    }
+
+    function search(){
+      const q = el('q').value.trim().toLowerCase();
+      const list = RECIPES.filter(r => {
+        const t = (r.title||'').toLowerCase();
+        const ing = (r.ingredients||[]).join(' ').toLowerCase();
+        const tags = (r.tags||[]).join(' ').toLowerCase();
+        return !q || t.includes(q) || ing.includes(q) || tags.includes(q);
+      });
+      render(list, q);
+      el('info').textContent = `${list.length} result(s) • Source: ${loadedFrom}`;
+    }
+
+    loadRecipes().then(()=>{
+      search();
+    });
+
+    document.getElementById('btnSearch').addEventListener('click', search);
+    document.getElementById('btnClear').addEventListener('click', ()=>{ el('q').value=''; search(); });
+    document.querySelectorAll('.topic').forEach(b=> b.addEventListener('click', ()=>{ el('q').value=b.textContent; search(); }));
+    el('q').addEventListener('keydown', (e)=>{ if(e.key==='Enter') search(); });
+  </script>
+</body>
+</html>
