@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Analytics Tracking — SimHireEstate</title>
+  <meta name="description" content="Real-time tracking: active users, total visitors, and top countries." />
+  <link rel="icon" href="./assets/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { brand: { primary: '#063F5E', secondary: '#1a1a69', gray: '#6B7280' } } } } };
+  </script>
+  <style>
+    :root { --brand-primary:#063F5E; --brand-secondary:#1a1a69; --brand-gray:#6B7280; }
+    html { scroll-behavior: smooth; }
+    /* Global responsive guardrails */
+    img, svg, video, iframe { max-width: 100%; height: auto; }
+    .container { max-width: 72rem; margin: 0 auto; padding-left: 1rem; padding-right: 1rem; }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
+</head>
+<body class="min-h-screen flex flex-col bg-white text-slate-800">
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="./index.html" class="flex items-center space-x-3">
+          <img src="./assets/logo.png" alt="SimHireEstate" class="h-10 w-auto" onerror="this.style.display='none'" />
+          <span class="text-xl font-semibold" style="color: var(--brand-primary)">SimHireEstate</span>
+        </a>
+        <nav class="hidden md:flex items-center space-x-6 text-sm font-medium">
+          <a href="./about.html" class="hover:text-brand-secondary">About</a>
+          <a href="./services.html" class="hover:text-brand-secondary">Services</a>
+          <a href="./vision.html" class="hover:text-brand-secondary">Vision</a>
+          <a href="./pricing.html" class="hover:text-brand-secondary">Pricing</a>
+          <a href="./packages.html" class="hover:text-brand-secondary">Packages</a>
+          <a href="./roadmap.html" class="hover:text-brand-secondary">Roadmap</a>
+          <a href="./contact.html" class="hover:text-brand-secondary">Contact</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1">
+    <section class="bg-gradient-to-br from-brand-primary to-brand-secondary text-white" data-aos="fade-up">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 class="text-3xl sm:text-4xl font-bold">Tracking Dashboard</h1>
+        <p class="mt-3 text-slate-100">Real-time users, total visitors, and top countries.</p>
+      </div>
+    </section>
+
+    <section class="py-14">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-3 gap-6">
+        <!-- Active Users -->
+        <article class="p-6 bg-white rounded-xl border border-slate-200" data-aos="fade-up">
+          <h2 class="text-lg font-semibold" style="color:var(--brand-primary)">Active Users (Real-time)</h2>
+          <p id="activeUsers" class="mt-3 text-4xl font-bold">--</p>
+          <p class="text-sm text-slate-600 mt-1">Last updated: <span id="updatedAt">--</span></p>
+        </article>
+
+        <!-- Total Visitors -->
+        <article class="p-6 bg-white rounded-xl border border-slate-200" data-aos="fade-up" data-aos-delay="100">
+          <h2 class="text-lg font-semibold" style="color:var(--brand-primary)">Total Visitors</h2>
+          <p id="totalVisitors" class="mt-3 text-4xl font-bold">--</p>
+          <p class="text-sm text-slate-600 mt-1">All time or selected period from your backend</p>
+          <p class="text-xs text-slate-500 mt-2">Enquiries sent (this device): <span id="enquiriesCount">0</span></p>
+        </article>
+
+        <!-- Countries -->
+        <article class="p-6 bg-white rounded-xl border border-slate-200" data-aos="fade-up" data-aos-delay="200">
+          <h2 class="text-lg font-semibold" style="color:var(--brand-primary)">Top Countries</h2>
+          <ul id="topCountries" class="mt-3 space-y-2 text-sm text-slate-700">
+            <li>--</li>
+          </ul>
+        </article>
+      </div>
+
+      <!-- Looker Studio Embed (optional, replace URL) -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10" data-aos="fade-up">
+        <div class="rounded-xl overflow-hidden border border-slate-200">
+          <iframe id="lookerStudio" title="Analytics Report" class="w-full aspect-video sm:h-[420px] lg:h-[600px]" style="border:0;" src=""></iframe>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Set an embeddable Looker Studio URL or keep blank.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mt-auto border-t border-slate-100 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="flex items-center justify-between text-sm text-slate-600">
+        <p>© <span id="year"></span> SimHireEstate. All rights reserved.</p>
+        <p>Built for opportunity, trust, and growth.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const cfg = (window.ANALYTICS_CONFIG || {});
+    const ENDPOINT = cfg.ENDPOINT || '';
+
+    // Update enquiries count from localStorage
+    (function updateLocalEnquiries(){
+      const k = 'simhire_enquiries_count';
+      const count = parseInt(localStorage.getItem(k) || '0', 10) || 0;
+      const el = document.getElementById('enquiriesCount');
+      if (el) el.textContent = String(count);
+    })();
+
+    // Read any cached metrics first for consistent UI on reload
+    (function loadCachedMetrics(){
+      try {
+        const raw = localStorage.getItem('simhire_metrics_cache');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (!data) return;
+        const active = typeof data.activeUsers === 'number' ? data.activeUsers : '--';
+        const total = typeof data.totalVisitors === 'number' ? data.totalVisitors : '--';
+        const countries = Array.isArray(data.topCountries) ? data.topCountries : [];
+        document.getElementById('activeUsers').textContent = active;
+        document.getElementById('totalVisitors').textContent = total;
+        document.getElementById('updatedAt').textContent = data.updatedAt || new Date().toLocaleTimeString();
+        const list = document.getElementById('topCountries');
+        list.innerHTML = countries.length ? '' : '<li>--</li>';
+        countries.forEach(c => {
+          const li = document.createElement('li');
+          li.textContent = `${c.country}: ${c.count}`;
+          list.appendChild(li);
+        });
+      } catch {}
+    })();
+
+    async function fetchMetrics() {
+      try {
+        let data = null;
+        if (ENDPOINT) {
+          const res = await fetch(ENDPOINT, { cache: 'no-store' });
+          if (!res.ok) throw new Error('Failed to fetch');
+          data = await res.json();
+        } else {
+          // Fallback mock so UI shows values even without a backend
+          data = {
+            activeUsers: Math.floor(Math.random() * 8) + 2,
+            totalVisitors: 1200 + Math.floor(Math.random() * 400),
+            topCountries: [
+              { country: 'Rwanda', count: 800 },
+              { country: 'Kenya', count: 300 },
+              { country: 'Uganda', count: 180 }
+            ]
+          };
+        }
+
+        const active = typeof data.activeUsers === 'number' ? data.activeUsers : '--';
+        const total = typeof data.totalVisitors === 'number' ? data.totalVisitors : '--';
+        const countries = Array.isArray(data.topCountries) ? data.topCountries : [];
+
+        document.getElementById('activeUsers').textContent = active;
+        document.getElementById('totalVisitors').textContent = total;
+        const nowText = new Date().toLocaleTimeString();
+        document.getElementById('updatedAt').textContent = nowText;
+
+        const list = document.getElementById('topCountries');
+        list.innerHTML = countries.length ? '' : '<li>--</li>';
+        countries.forEach(c => {
+          const li = document.createElement('li');
+          li.textContent = `${c.country}: ${c.count}`;
+          list.appendChild(li);
+        });
+
+        // Cache for consistent reload experience
+        try {
+          localStorage.setItem('simhire_metrics_cache', JSON.stringify({
+            activeUsers: active,
+            totalVisitors: total,
+            topCountries: countries,
+            updatedAt: nowText
+          }));
+        } catch {}
+      } catch (err) {
+        console.warn('Analytics fetch error:', err);
+      }
+    }
+
+    // Poll every 20s
+    fetchMetrics();
+    setInterval(fetchMetrics, 20000);
+
+    // Optional: set Looker Studio URL if provided via config
+    if (cfg.LOOKER_STUDIO_URL) {
+      document.getElementById('lookerStudio').src = cfg.LOOKER_STUDIO_URL;
+    }
+  </script>
+  <script src="./js/main.js"></script>
+  <script src="./js/whatsapp.js"></script>
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script src="./js/analytics-config.js"></script>
+  <script src="./js/analytics.js"></script>
+</body>
+</html>
